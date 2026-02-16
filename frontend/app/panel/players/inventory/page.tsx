@@ -4,6 +4,7 @@ import type { Item } from "minecraft-textures";
 import type { ItemStack, PlayerInventory } from "@/lib/types";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { Backpack } from "lucide-react";
 import { SubPage } from "../../sub-page";
 import { InventoryContext } from "@/contexts/inventory-context";
@@ -95,11 +96,24 @@ export default function Inventory() {
       setInventory(data);
     });
 
+    client.subscribe("error", (err: number) => {
+      switch(err) {
+        case 400:
+          toast.error($("players.inventory.ws.error.400"));
+          break;
+        case 404:
+          toast.error($("players.inventory.ws.error.404"));
+          push("/panel/players");
+          break;
+      }
+    });
+
     emitter.on("refresh-data", () => client.send("fetch", null));
 
     return () => {
       emitter.removeAllListeners("refresh-data");
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, uuid]);
 
   // Update held item position as soon as it is picked up

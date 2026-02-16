@@ -1,7 +1,5 @@
 import type { ItemStack } from "../types";
-import { toast } from "sonner";
 import { WebSocketClient } from ".";
-import { $ } from "../i18n";
 
 export interface InventoryMovePayload {
   items: ItemStack[]
@@ -21,16 +19,15 @@ export class InventoryClient extends WebSocketClient<InventoryMessageType> {
     super(`/socket/inventory/${uuid}`);
   }
 
-  override onOpen() {
+  protected override onOpen() {
     console.log("Inventory connected.");
   }
   
-  override onClose() {
+  protected override onClose() {
     console.log("Inventory disconnected.");
   }
 
-  override onError(err: Event) {
+  protected override onError(err: Event) {
     console.log("Inventory connection failed. ", err);
-    toast.error($("players.inventory.ws.error"));
   }
 }

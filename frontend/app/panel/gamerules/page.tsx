@@ -19,7 +19,7 @@ import {
   type ServerGamerules
 } from "@/lib/gamerules";
 import { sendGetRequest, sendPostRequest, toastError } from "@/lib/api";
-import { getCurrentState, isNumeric, objectToMap } from "@/lib/utils";
+import { cn, getCurrentState, isNumeric, objectToMap } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -126,14 +126,6 @@ export default function Gamerules() {
             {Array.from(gamerulesMap).map(([key, value]) => {
               const preset = gamerulePresets.find(({ id, type }) => (id === key && typeof value === type));
 
-              // if(!preset) {
-              //   toast.error("游戏规则预设错误", { description: "游戏规则预设与实际服务器游戏规则无法匹配："+ key });
-              //   return <></>;
-              // }
-              if(searchString && !key.toLowerCase().includes(searchString.toLowerCase())) {
-                return <Fragment key={key}/>;
-              }
-
               return (
                 <FormField
                   /** @see https://github.com/react-hook-form/react-hook-form/issues/10977#issuecomment-1737917718 */
@@ -141,7 +133,12 @@ export default function Gamerules() {
                   control={form.control}
                   name={key}
                   render={({ field }) => (
-                    <Item variant="outline" className="p-3 bg-background dark:bg-transparent">
+                    <Item
+                      variant="outline"
+                      className={cn(
+                        "p-3 bg-background dark:bg-transparent",
+                        (searchString && !key.toLowerCase().includes(searchString.toLowerCase())) && "hidden"
+                      )}>
                       <ItemContent className="max-w-full">
                         <ItemTitle
                           className="gap-2 max-w-full"

@@ -8,12 +8,13 @@ import {
   useState
 } from "react";
 import getCaretCoordinates from "textarea-caret";
+import { X } from "lucide-react";
 import { InputContext } from "@/contexts/input-context";
 import { cn, getCurrentArgumentIndex, getCurrentState, getInputtedArgumentStr } from "@/lib/utils";
-import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { googleSansCode } from "@/lib/fonts";
 import { usePrevious } from "@/hooks/use-previous";
+import { InputGroup, InputGroupButton, InputGroupInput } from "./ui/input-group";
 
 function AutocompleteItem({
   name,
@@ -68,6 +69,7 @@ export function AutocompleteInput({
   const [advisedList, setAdvisedList] = useState<string[]>([]);
   const [selected, setSelected] = useState<number | null>(null); // index
   const [positionReady, setPositionReady] = useState(false);
+  const inputGroupRef = useRef<HTMLDivElement | null>(null);
   const prevItemList = usePrevious(itemList);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const isInvisible = value.length === 0 || advisedList.length === 0;
@@ -156,6 +158,16 @@ export function AutocompleteInput({
     if(onKeyDown) onKeyDown(e);
   };
 
+  const handleClear = () => {
+    if(!inputRef.current) return;
+
+    inputRef.current.value = "";
+    inputRef.current.focus();
+    setValue("");
+    setAdvisedList([]);
+    setSelected(null);
+  };
+
   useEffect(() => {
     if(!inputRef.current) return;
     const input = inputRef.current;
@@ -180,19 +192,20 @@ export function AutocompleteInput({
 
   // Set the position of autocomplete container when `advisedList` being updated
   useEffect(() => {
-    if(!inputRef.current || !listContainerRef.current) return;
+    if(!inputRef.current || !inputGroupRef.current || !listContainerRef.current) return;
     setPositionReady(false);
 
     const input = inputRef.current;
-    const inputRect = input.getBoundingClientRect();
+    const inputGroup = inputGroupRef.current;
+    const inputRect = inputGroup.getBoundingClientRect();
     const listRect = listContainerRef.current.getBoundingClientRect();
     
     if(listRect.height === 0) return;
 
     setTop(inputRect.top - listRect.height - 2); // y offset 2px
-    setLeft(input.offsetLeft + getCaretCoordinates(input, input.selectionStart ?? 0).left);
+    setLeft(inputGroup.offsetLeft + getCaretCoordinates(input, input.selectionStart ?? 0).left);
     setPositionReady(true);
-  }, [advisedList, inputRef, listContainerRef]);
+  }, [advisedList, inputRef, inputGroupRef, listContainerRef]);
 
   return (
     <InputContext.Provider value={{
@@ -201,16 +214,26 @@ export function AutocompleteInput({
       setSelected,
       complete
     }}>
-      <Input
-        {...props}
-        autoComplete="off"
-        onKeyDown={(e) => handleKeydown(e)}
-        onInput={(e) => {
-          setValue((e.target as HTMLInputElement).value);
-          if(onInput) onInput(e);
-        }}
-        data-current-selected={selected ?? 0}
-        ref={inputRef}/>
+      <InputGroup ref={inputGroupRef}>
+        <InputGroupInput
+          {...props}
+          autoComplete="off"
+          onKeyDown={(e) => handleKeydown(e)}
+          onInput={(e) => {
+            setValue((e.target as HTMLInputElement).value);
+            if(onInput) onInput(e);
+          }}
+          data-current-selected={selected ?? 0}
+          ref={inputRef}/>
+        <InputGroupButton
+          className={cn(
+            "hover:bg-transparent! cursor-pointer",
+            (!inputRef.current || inputRef.current.value.length === 0) && "hidden"
+          )}
+          onClick={() => handleClear()}>
+          <X />
+        </InputGroupButton>
+      </InputGroup>
       <div
         className={cn(
           "absolute flex flex-col bg-popover min-w-40 w-fit max-h-32 p-1 border rounded-sm overflow-hidden overflow-y-auto",

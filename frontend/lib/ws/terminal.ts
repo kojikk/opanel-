@@ -38,15 +38,15 @@ export class TerminalClient extends WebSocketClient<TerminalMessageType> {
     super("/socket/terminal");
   }
 
-  override onOpen() {
+  protected override onOpen() {
     console.log("Terminal connected.");
   }
   
-  override onClose() {
+  protected override onClose() {
     console.log("Terminal disconnected.");
   }
 
-  override onError(err: Event) {
+  protected override onError(err: Event) {
     console.log("Terminal connection failed. ", err);
     toast.error($("terminal.ws.error"));
   }

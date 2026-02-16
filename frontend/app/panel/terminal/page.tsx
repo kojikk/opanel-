@@ -7,7 +7,7 @@ import {
   useRef,
   useState
 } from "react";
-import { ArrowUp, SquareTerminal, Trash2, X } from "lucide-react";
+import { ArrowUp, SquareTerminal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { TerminalConnector } from "@/components/terminal-connector";
@@ -130,14 +130,6 @@ export default function Terminal() {
             onKeyDown={(e) => handleKeydown(e)}
             onInput={() => handleInput()}
             ref={inputRef}/>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="cursor-pointer max-sm:hidden"
-            title={$("terminal.clear")}
-            onClick={() => handleClear()}>
-            <X />
-          </Button>
           <Button
             size="icon"
             className="cursor-pointer"
