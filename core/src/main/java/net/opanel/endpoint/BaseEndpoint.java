@@ -3,6 +3,7 @@ package net.opanel.endpoint;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.javalin.Javalin;
+import io.javalin.http.HttpStatus;
 import io.javalin.websocket.*;
 import net.opanel.OPanel;
 import net.opanel.common.OPanelServer;
@@ -108,8 +109,8 @@ public abstract class BaseEndpoint implements Connectable {
     @Override
     public void onError(WsErrorContext ctx) { }
 
-    protected void sendErrorMessage(WsContext ctx, String err) {
-        ctx.send(new Packet<>(Packet.ERROR, err));
+    protected void sendErrorMessage(WsContext ctx, HttpStatus status) {
+        ctx.send(new Packet<>(Packet.ERROR, status.getCode()));
     }
 
     protected <D> void sendMessage(Session session, Packet<D> packet) {

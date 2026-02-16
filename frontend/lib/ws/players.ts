@@ -17,15 +17,15 @@ export class PlayersClient extends WebSocketClient<PlayersMessageType> {
     super("/socket/players");
   }
 
-  override onOpen() {
+  protected override onOpen() {
     console.log("Player list connected.");
   }
   
-  override onClose() {
+  protected override onClose() {
     console.log("Player list disconnected.");
   }
 
-  override onError(err: Event) {
+  protected override onError(err: Event) {
     console.log("Player list connection failed. ", err);
     toast.error($("players.ws.error"));
   }

@@ -1,6 +1,7 @@
 package net.opanel.endpoint;
 
 import io.javalin.Javalin;
+import io.javalin.http.HttpStatus;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsContext;
 import net.opanel.OPanel;
@@ -39,14 +40,14 @@ public class InventoryEndpoint extends BaseEndpoint {
     public void onConnect(WsContext ctx) {
         final String uuid = ctx.pathParam("uuid");
         if(uuid.isEmpty()) {
-            sendErrorMessage(ctx, "Missing uuid in path.");
+            sendErrorMessage(ctx, HttpStatus.UNAUTHORIZED);
             ctx.closeSession(1008, "Missing uuid.");
             return;
         }
 
         OPanelPlayer player = server.getPlayer(uuid);
         if(player == null) {
-            sendErrorMessage(ctx, "Player not found.");
+            sendErrorMessage(ctx, HttpStatus.NOT_FOUND);
             ctx.closeSession(1008, "Player not found.");
             return;
         }
@@ -63,13 +64,13 @@ public class InventoryEndpoint extends BaseEndpoint {
 
         subscribe(ctx.session, InventoryPacket.UPDATE, OPanelInventory.OPanelItemStack.class, (msgCtx, item) -> {
             if(item == null) {
-                sendErrorMessage(msgCtx, "Items are required.");
+                sendErrorMessage(msgCtx, HttpStatus.BAD_REQUEST);
                 return;
             }
 
             OPanelPlayer currentPlayer = server.getPlayer(uuid);
             if(currentPlayer == null) {
-                sendErrorMessage(msgCtx, "Player not found.");
+                sendErrorMessage(msgCtx, HttpStatus.NOT_FOUND);
                 return;
             }
 
