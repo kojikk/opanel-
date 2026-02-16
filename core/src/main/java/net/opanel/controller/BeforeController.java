@@ -39,6 +39,9 @@ public class BeforeController extends BaseController {
         String reqPath = ctx.path();
         if(!reqPath.contains(".txt") || reqPath.contains(DEFAULT_RSC_FILE)) return;
 
+        // Request robots.txt file
+        if(reqPath.equals("/robots.txt")) return;
+
         // Maybe a next.js bug, which will lead user to <page_name>.txt file without _rsc param
         // just redirect it to the correct page
         if(ctx.queryParam("_rsc") == null) {
