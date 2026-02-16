@@ -2,16 +2,18 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { checkAuth } from "@/lib/api";
 
-export function useCheckAuth(cb?: () => void) {
+export function useCheckAuth(success?: () => void) {
   const { push } = useRouter();
 
   useEffect(() => {
     checkAuth().then((res) => {
-      if(!res) {
+      if(!res && window.location.pathname !== "/login") {
         push("/login");
         return;
       }
-      cb && cb();
+      if(res) {
+        success && success();
+      }
     });
-  }, [push, cb]);
+  }, [push, success]);
 }
