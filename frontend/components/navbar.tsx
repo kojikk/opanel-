@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { deleteCookie } from "cookies-next/client";
+
 import { BookText, Info, LogOut, Settings, SquareArrowOutUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SidebarTrigger } from "./ui/sidebar";
 import { $ } from "@/lib/i18n";
+import { logout } from "@/lib/api";
 
 export function Navbar({ className, ...props }: React.ComponentProps<"nav">) {
-  const handleLogout = () => {
-    deleteCookie("token");
+  const handleLogout = async () => {
+    await logout();
     window.location.href = "/login";
   };
 

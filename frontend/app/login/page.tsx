@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Info, KeyRound } from "lucide-react";
 import md5 from "md5";
-import { hasCookie, setCookie } from "cookies-next/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,13 +34,14 @@ import { copyrightInfo } from "@/lib/global";
 import { $ } from "@/lib/i18n";
 import { Text } from "@/components/i18n-text";
 import { useKeydown } from "@/hooks/use-keydown";
+import { useCheckAuth } from "@/hooks/use-check-auth";
 
 const formSchema = z.object({
   accessKey: z.string().nonempty($("login.form.input.empty")),
 });
 
 export default function Login() {
-  const router = useRouter();
+  const { push } = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -66,9 +66,8 @@ export default function Login() {
       const { cram } = await sendGetRequest<{ cram: string }>(`/api/auth?id=${id}`, false);
       const challengeResult = md5(hashedKey + cram); // hashed 3
 
-      const res = await sendPostRequest<{ token: string }>("/api/auth", { id, result: challengeResult }, false);
-      setCookie("token", res.token);
-      router.push("/panel/dashboard");
+      await sendPostRequest("/api/auth", { id, result: challengeResult });
+      push("/panel/dashboard");
     } catch (e: any) {
       setLoading(false);
       switch(e.status) {
@@ -83,12 +82,7 @@ export default function Login() {
     }
   };
 
-  useEffect(() => {
-    if(hasCookie("token")) {
-      router.push("/panel/dashboard");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useCheckAuth(() => push("/panel/dashboard"));
 
   useKeydown("Enter", {}, () => handleLogin());
 

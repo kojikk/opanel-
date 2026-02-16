@@ -1,6 +1,5 @@
 import type { APIResponse } from "./types";
 import axios, { type AxiosError } from "axios";
-import { deleteCookie } from "cookies-next/client";
 import { toast } from "sonner";
 
 export const apiUrl = (
@@ -22,7 +21,6 @@ export const wsUrl = (
  */
 export function toastError(e: AxiosError, message: string, descriptions: [number, string][]) {
   if(e.status === 401 && window.location.pathname !== "/login") {
-    deleteCookie("token");
     window.location.href = "/login";
     return;
   }
@@ -104,4 +102,22 @@ export async function uploadFile(route: string, file: File, onProgress?: (progre
     data: formData,
     onUploadProgress: (e) => onProgress && onProgress(e.progress ?? 0)
   })).data as APIResponse<never>;
+}
+
+export async function checkAuth(): Promise<boolean> {
+  try {
+    await sendPostRequest("/api/auth/check");
+    return true;
+  } catch (e: any) {
+    return false;
+  }
+}
+
+export async function logout(): Promise<boolean> {
+  try {
+    await sendPostRequest("/api/auth/logout");
+    return true;
+  } catch (e: any) {
+    return false;
+  }
 }

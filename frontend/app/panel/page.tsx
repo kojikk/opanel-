@@ -1,16 +1,12 @@
 "use client";
 
-import { hasCookie } from "cookies-next/client";
-import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useCheckAuth } from "@/hooks/use-check-auth";
 
 export default function Panel() {
-  useEffect(() => {
-    if(hasCookie("token")) {
-      window.location.href = "/panel/dashboard";
-    } else {
-      window.location.href = "/login";
-    }
-  }, []);
+  const { push } = useRouter();
+
+  useCheckAuth(() => push("/panel/dashboard"));
 
   return <></>;
 }

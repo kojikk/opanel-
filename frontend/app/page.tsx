@@ -1,20 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { hasCookie } from "cookies-next/client";
 import { useRouter } from "next/navigation";
+import { useCheckAuth } from "@/hooks/use-check-auth";
 
 export default function Home() {
   const { push } = useRouter();
 
-  useEffect(() => {
-    if(hasCookie("token")) {
-      push("/panel/dashboard");
-    } else {
-      push("/login");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useCheckAuth(() => push("/panel/dashboard"));
 
   return <></>;
 }

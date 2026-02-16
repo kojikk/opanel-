@@ -1,9 +1,8 @@
-import { getCookie, hasCookie } from "cookies-next/client";
 import { toast } from "sonner";
-import { wsUrl } from "../api";
+import { checkAuth, wsUrl } from "../api";
 import { $ } from "../i18n";
 
-type MessageType<M extends string> = M | "auth" | "connect" | "ping" | "pong" | "error";
+type MessageType<M extends string> = M | "connect" | "ping" | "pong" | "error";
 interface Packet<M extends string, D> {
   type: MessageType<M>
   data: D
@@ -17,7 +16,15 @@ export abstract class WebSocketClient<M extends string> {
   private heartbeatTimer: NodeJS.Timeout | null = null;
 
   constructor(route: string) {
-    if(!hasCookie("token")) window.location.href = "/login";
+    checkAuth().then((res) => {
+      if(!res) {
+        if(this.socket !== null) {
+          this.socket.close();
+          this.socket = null;
+        }
+        window.location.href = "/login";
+      }
+    });
 
     const url = new URL(wsUrl);
     url.pathname = route;
@@ -27,12 +34,6 @@ export abstract class WebSocketClient<M extends string> {
 
   private init() {
     if(!this.socket) return;
-
-    this.socket.addEventListener("open", () => {
-      // Send authentication token
-      // or the server will not accept any messages
-      this.send("auth", getCookie("token"));
-    });
 
     this.subscribe("connect", () => {
       this.onOpen();
