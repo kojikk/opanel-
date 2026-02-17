@@ -369,7 +369,8 @@
   "terminal.ws.error": "無法連接到終端WebSocket",
   "terminal.input.empty": "請輸入指令以發送",
   "terminal.input.placeholder": "發送訊息 / 指令...",
-  "terminal.clear": "清空",
+  "terminal.fullscreen": "全屏",
+  "terminal.exit-fullscreen": "退出全屏",
   "terminal.send": "發送",
   "terminal.history": "歷史紀錄",
 

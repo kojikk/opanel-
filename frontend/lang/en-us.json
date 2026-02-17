@@ -369,7 +369,8 @@
   "terminal.ws.error": "Unable to connect to the WebSocket of terminal",
   "terminal.input.empty": "Please enter a command to send",
   "terminal.input.placeholder": "Send message / command...",
-  "terminal.clear": "Clear",
+  "terminal.fullscreen": "Fullscreen",
+  "terminal.exit-fullscreen": "Exit Fullscreen",
   "terminal.send": "Send",
   "terminal.history": "History",
 
