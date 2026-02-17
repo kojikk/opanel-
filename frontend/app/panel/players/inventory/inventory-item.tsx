@@ -269,9 +269,10 @@ export function InventoryItem({
           )}>
             {resolvedNBT?.getName() ?? $mc(itemStack.id)}
           </span>
-          {/* Enchantment List */}
-          {resolvedNBT?.hasEnchantments() && (
+          {/* Enchantment List & Lore */}
+          {(resolvedNBT && (resolvedNBT?.hasEnchantments() || resolvedNBT?.getLore().length > 0)) && (
             <div className="flex flex-col gap-0 mb-4 cc-7">
+              {/* Enchantment List */}
               {Array.from(resolvedNBT.getEnchantments()).map(([id, level], i) => (
                 <span key={i}>
                   {$(`enchantment.minecraft.${id.replace("minecraft:", "")}` as any) +" "}
@@ -282,14 +283,12 @@ export function InventoryItem({
                   }
                 </span>
               ))}
-            </div>
-          )}
-          {/* Lore */}
-          {(resolvedNBT && resolvedNBT.getLore().length > 0) && (
-            <div className="flex flex-col gap-0 mb-4 cc-5 italic">
-              {resolvedNBT.getLore().map((line, i) => (
-                <span key={i}>{line}</span>
-              ))}
+              {/* Lore */}
+              <div className="flex flex-col gap-0 cc-5 italic">
+                {resolvedNBT.getLore().map((line, i) => (
+                  <span key={i}>{line}</span>
+                ))}
+              </div>
             </div>
           )}
           {/* Unbreakable */}
