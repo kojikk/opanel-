@@ -1,5 +1,6 @@
 import {
   type NbtBool,
+  type NbtList,
   type NbtNumber,
   NbtObject,
   NbtString
@@ -12,6 +13,26 @@ import {
   glintItems,
 } from "./resolver";
 import { $, $mc } from "../i18n";
+import { textComponentToString } from "../utils";
+
+/**
+ * Converts the item model's model string to a texture item ID
+ *
+ * @example
+ * - minecraft:stone -> minecraft:stone
+ * - minecraft:item/stone -> minecraft:stone
+ * - stone -> minecraft:stone
+ */
+export function itemModelToTextureId(model: string | null): string | null {
+  if(!model) return null;
+
+  const colon = model.indexOf(":");
+  const namespace = colon === -1 ? "minecraft" : model.slice(0, colon);
+  const path = colon === -1 ? model : model.slice(colon + 1);
+  const pathParts = path.split("/");
+  if(pathParts.length < 2) return `${namespace}:${path}`;
+  return `${namespace}:${pathParts.slice(1).join("/")}`;
+}
 
 export class ComponentsResolver extends ItemNBTResolver {
   private enchantments: Enchantments = new Map();
@@ -43,11 +64,8 @@ export class ComponentsResolver extends ItemNBTResolver {
 
   override getName() {
     const customName = this.nbt.get<NbtObject | NbtString>("minecraft:custom_name");
-    if(customName instanceof NbtString) {
-      return customName.value;
-    }
-    if(customName instanceof NbtObject) {
-      return customName.get<NbtString>("text")?.value ?? $mc(this.id);
+    if(customName instanceof NbtString || customName instanceof NbtObject) {
+      return textComponentToString(customName) ?? $mc(this.id);
     }
     if(this.getPotionId()) {
       return $(`item.minecraft.potion.effect.${this.getPotionId()?.replace("minecraft:", "")}` as any);
@@ -57,6 +75,20 @@ export class ComponentsResolver extends ItemNBTResolver {
 
   override hasCustomName(): boolean {
     return this.hasComponent("minecraft:custom_name");
+  }
+
+  override getLore(): string[] {
+    const loreNBT = this.nbt.get<NbtList>("minecraft:lore");
+    if(!loreNBT) return [];
+
+    const lore: string[] = [];
+    for(const item of loreNBT.childs) {
+      const loreStr = textComponentToString(item as NbtObject | NbtString);
+      if(loreStr !== null) {
+        lore.push(loreStr);
+      }
+    }
+    return lore;
   }
 
   override getEnchantments() {
@@ -106,5 +138,10 @@ export class ComponentsResolver extends ItemNBTResolver {
 
     const id = this.getPotionId();
     return id ? potionColors[id] : potionColors["minecraft:water"];
+  }
+
+  override getItemModel(): string | null {
+    const model = this.nbt.get<NbtString>("minecraft:item_model")?.value;
+    return model ?? null;
   }
 }

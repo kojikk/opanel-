@@ -13,6 +13,7 @@ import {
 } from "./resolver";
 import { $, $mc } from "../i18n";
 import { potionColors } from "./potion-colors";
+import { textComponentToString } from "../utils";
 
 export class TagResolver extends ItemNBTResolver {
   private enchantments: Enchantments = new Map();
@@ -53,6 +54,20 @@ export class TagResolver extends ItemNBTResolver {
 
   override hasCustomName(): boolean {
     return this.hasTag("display") && this.nbt.get<NbtObject>("display")?.get("Name") !== undefined;
+  }
+
+  override getLore(): string[] {
+    const loreNBT = this.nbt.get<NbtList>(["display", "Lore"]);
+    if(!loreNBT) return [];
+
+    const lore: string[] = [];
+    for(const item of loreNBT.childs) {
+      const loreStr = textComponentToString(item as NbtObject | NbtString);
+      if(loreStr !== null) {
+        lore.push(loreStr);
+      }
+    }
+    return lore;
   }
 
   override getEnchantments() {
@@ -101,5 +116,9 @@ export class TagResolver extends ItemNBTResolver {
     
     const id = this.getPotionId();
     return id ? potionColors[id] : potionColors["minecraft:water"];
+  }
+
+  override getItemModel(): string | null {
+    return null;
   }
 }

@@ -20,7 +20,7 @@ import { createResolver } from "@/lib/nbt";
 import GlintTexture from "@/assets/images/enchanted-glint.png";
 import PotionOverlayTexture from "@/assets/images/potion-overlay.png";
 import "@/style/item-effect.css";
-import { ComponentsResolver } from "@/lib/nbt/components-resolver";
+import { ComponentsResolver, itemModelToTextureId } from "@/lib/nbt/components-resolver";
 
 export const AIR = "minecraft:air";
 
@@ -51,11 +51,19 @@ export function InventoryItem({
     removeClickedItem,
     halfClickedItem
   } = ctx;
-  const textureItem = useMemo(() => (
-    textures.find(({ id }) => id === itemStack.id)
-  ), [textures, itemStack.id]);
   const [resolvedNBT, setResolvedNBT] = useState<ItemNBTResolver | null>(null);
   const [hovered, setHovered] = useState(false);
+  const textureIdFromItemModel = useMemo(
+    () => itemModelToTextureId(resolvedNBT?.getItemModel() ?? null),
+    [resolvedNBT]
+  );
+
+  const textureItem = useMemo(() => {
+    const byModel = textureIdFromItemModel
+      ? textures.find(({ id }) => id === textureIdFromItemModel)
+      : null;
+    return byModel ?? textures.find(({ id }) => id === itemStack.id);
+  }, [textures, itemStack.id, textureIdFromItemModel]);
   const hoveredItemTagRef = useRef<HTMLDivElement | null>(null);
 
   const handleLeftClick = () => {
@@ -261,6 +269,14 @@ export function InventoryItem({
                     : level
                   }
                 </span>
+              ))}
+            </div>
+          )}
+          {/* Lore */}
+          {resolvedNBT && resolvedNBT.getLore().length > 0 && (
+            <div className="flex flex-col gap-0 mb-4 cc-5 italic">
+              {resolvedNBT.getLore().map((line, i) => (
+                <span key={i}>{line}</span>
               ))}
             </div>
           )}

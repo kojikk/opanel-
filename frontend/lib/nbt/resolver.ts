@@ -25,6 +25,7 @@ export abstract class ItemNBTResolver {
   abstract isEmpty(): boolean;
   abstract getName(): string;
   abstract hasCustomName(): boolean;
+  abstract getLore(): string[];
   abstract getEnchantments(): Enchantments;
   abstract hasEnchantments(): boolean;
   abstract shouldGlint(): boolean;
@@ -33,4 +34,5 @@ export abstract class ItemNBTResolver {
   abstract isPotion(): boolean;
   abstract getPotionId(): string | null;
   abstract getPotionColor(): RgbColor | null;
+  abstract getItemModel(): string | null;
 }
