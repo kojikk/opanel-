@@ -344,7 +344,7 @@ export function InventoryItem({
     </div>
   );
 
-  if(isFromExplorer(itemStack)) return itemComponent;
+  if(isFromExplorer(itemStack) || itemStack.id === AIR) return itemComponent;
 
   return (
     <ItemDialog

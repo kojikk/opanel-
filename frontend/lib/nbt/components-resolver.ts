@@ -170,9 +170,10 @@ export class ComponentsResolver extends ItemNBTResolver {
       return [r, g, b];
     }
     if(dyedColor instanceof NbtList) {
-      const r = (dyedColor.childs[0] as NbtNumber).value * 255;
-      const g = (dyedColor.childs[1] as NbtNumber).value * 255;
-      const b = (dyedColor.childs[2] as NbtNumber).value * 255;
+      if(dyedColor.childs.length < 3) return null;
+      const r = Math.min(255, (dyedColor.childs[0] as NbtNumber).value * 255);
+      const g = Math.min(255, (dyedColor.childs[1] as NbtNumber).value * 255);
+      const b = Math.min(255, (dyedColor.childs[2] as NbtNumber).value * 255);
       return [r, g, b];
     }
     return null;

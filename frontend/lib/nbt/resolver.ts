@@ -39,7 +39,7 @@ export abstract class ItemNBTResolver {
   abstract getMapId(): number | null;
 
   isLeatherArmor(): boolean {
-    return [
+    return !!this.getDyedColor() && [
       "minecraft:leather_helmet",
       "minecraft:leather_chestplate",
       "minecraft:leather_leggings",
