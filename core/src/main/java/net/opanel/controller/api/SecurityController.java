@@ -38,7 +38,7 @@ public class SecurityController extends BaseController {
         plugin.setConfig(config);
 
         String token = JwtManager.generateToken(config.accessKey, config.salt);
-        ctx.cookie(JwtManager.createCookie("token", token, (int) TimeUnit.DAYS.toSeconds(1)));
+        ctx.cookie(JwtManager.createCookie("token", token, (int) TimeUnit.DAYS.toSeconds(1), plugin.getConfig().cookieSecure));
         sendResponse(ctx, new HashMap<>());
     };
 

@@ -1,3 +1,4 @@
 accessKey: ""
 salt: ""
 webServerPort: 3000
+cookieSecure: false

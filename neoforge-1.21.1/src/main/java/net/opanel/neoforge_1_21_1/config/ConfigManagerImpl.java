@@ -9,7 +9,8 @@ public class ConfigManagerImpl implements ConfigManager {
         return new OPanelConfiguration(
                 Config.ACCESS_KEY.get(),
                 Config.SALT.get(),
-                Config.WEB_SERVER_PORT.get()
+                Config.WEB_SERVER_PORT.get(),
+                Config.COOKIE_SECURE.get()
         );
     }
 
@@ -18,6 +19,7 @@ public class ConfigManagerImpl implements ConfigManager {
         Config.ACCESS_KEY.set(config.accessKey);
         Config.SALT.set(config.salt);
         Config.WEB_SERVER_PORT.set(config.webServerPort);
+        Config.COOKIE_SECURE.set(config.cookieSecure);
         Config.SPEC.save();
     }
 }

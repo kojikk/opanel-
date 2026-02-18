@@ -19,7 +19,8 @@ public class ConfigManagerImpl implements ConfigManager {
         return new OPanelConfiguration(
                 configSrc.getString("accessKey"),
                 configSrc.getString("salt"),
-                configSrc.getInt("webServerPort")
+                configSrc.getInt("webServerPort"),
+                configSrc.getBoolean("cookieSecure")
         );
     }
 
@@ -28,6 +29,7 @@ public class ConfigManagerImpl implements ConfigManager {
         configSrc.set("accessKey", config.accessKey);
         configSrc.set("salt", config.salt);
         configSrc.set("webServerPort", config.webServerPort);
+        configSrc.set("cookieSecure", config.cookieSecure);
         plugin.saveConfig();
     }
 }

@@ -54,12 +54,12 @@ public class JwtManager {
         return true;
     }
 
-    public static Cookie createCookie(String name, String value, int maxAge) {
+    public static Cookie createCookie(String name, String value, int maxAge, boolean secure) {
         Cookie cookie = new Cookie(name, value);
         cookie.setSameSite(SameSite.LAX);
         cookie.setMaxAge(maxAge);
         cookie.setHttpOnly(true);
-        cookie.setSecure(false); // In order to support HTTP
+        cookie.setSecure(secure);
         cookie.setPath("/");
         return cookie;
     }

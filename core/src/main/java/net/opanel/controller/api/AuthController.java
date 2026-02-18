@@ -77,7 +77,7 @@ public class AuthController extends BaseController {
             failedRecords.remove(remoteHost);
 
             String token = JwtManager.generateToken(storedRealKey, plugin.getConfig().salt);
-            ctx.cookie(JwtManager.createCookie("token", token, (int) TimeUnit.DAYS.toSeconds(1)));
+            ctx.cookie(JwtManager.createCookie("token", token, (int) TimeUnit.DAYS.toSeconds(1), plugin.getConfig().cookieSecure));
             sendResponse(ctx, HttpStatus.OK);
         } else {
             final int current = failedRecords.getOrDefault(remoteHost, 0);
@@ -100,7 +100,7 @@ public class AuthController extends BaseController {
             return;
         }
         if(!JwtManager.verifyToken(token, hashedRealKey, plugin.getConfig().salt)) {
-            ctx.cookie(JwtManager.createCookie("token", "", 0));
+            ctx.removeCookie("token");
             sendResponse(ctx, HttpStatus.UNAUTHORIZED, "Token is invalid.");
             return;
         }
@@ -108,7 +108,7 @@ public class AuthController extends BaseController {
     };
 
     public Handler logout = ctx -> {
-        ctx.cookie(JwtManager.createCookie("token", "", 0));
+        ctx.removeCookie("token");
         sendResponse(ctx, HttpStatus.OK);
     };
 
