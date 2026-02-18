@@ -13,6 +13,7 @@ import {
 } from "./resolver";
 import { $, $mc } from "../i18n";
 import { potionColors } from "./potion-colors";
+import { textComponentToString } from "../utils";
 
 export class TagResolver extends ItemNBTResolver {
   private enchantments: Enchantments = new Map();
@@ -55,6 +56,20 @@ export class TagResolver extends ItemNBTResolver {
     return this.hasTag("display") && this.nbt.get<NbtObject>("display")?.get("Name") !== undefined;
   }
 
+  override getLore(): string[] {
+    const loreNBT = this.nbt.get<NbtList>(["display", "Lore"]);
+    if(!loreNBT) return [];
+
+    const lore: string[] = [];
+    for(const item of loreNBT.childs) {
+      const loreStr = textComponentToString(item as NbtObject | NbtString);
+      if(loreStr !== null) {
+        lore.push(loreStr);
+      }
+    }
+    return lore;
+  }
+
   override getEnchantments() {
     return this.enchantments;
   }
@@ -77,18 +92,30 @@ export class TagResolver extends ItemNBTResolver {
   }
 
   override isPotion(): boolean {
-    return this.hasTag("Potion") || this.hasTag("CustomPotionColor");
+    return (this.hasTag("Potion") || this.hasTag("CustomPotionColor")) && (
+      [
+        "minecraft:potion",
+        "minecraft:splash_potion",
+        "minecraft:lingering_potion"
+      ].includes(this.id)
+    );
+  }
+
+  override isTippedArrow(): boolean {
+    return (this.hasTag("Potion") || this.hasTag("CustomPotionColor")) && (
+      this.id === "minecraft:tipped_arrow"
+    );
   }
 
   override getPotionId(): string | null {
-    if(!this.isPotion()) return null;
+    if(!this.isPotion() && !this.isTippedArrow()) return null;
 
     const potionId = this.nbt.get<NbtString>("Potion")?.value ?? "minecraft:empty";
     return potionId.replace(/long_|strong_/g, "");
   }
 
   override getPotionColor(): RgbColor | null {
-    if(!this.isPotion()) return null;
+    if(!this.isPotion() && !this.isTippedArrow()) return null;
 
     const customColor = this.nbt.get<NbtNumber>("CustomPotionColor")?.value;
     if(customColor !== undefined) {
@@ -101,5 +128,25 @@ export class TagResolver extends ItemNBTResolver {
     
     const id = this.getPotionId();
     return id ? potionColors[id] : potionColors["minecraft:water"];
+  }
+
+  override getItemModel(): string | null {
+    return null;
+  }
+
+  override getMapId(): number | null {
+    const mapId = this.nbt.get<NbtNumber>("map")?.value;
+    return mapId !== undefined ? mapId : null;
+  }
+
+  override getDyedColor(): RgbColor | null {
+    const dyedColor = this.nbt.get<NbtNumber>(["display", "color"]);
+    if(dyedColor === undefined) return null;
+
+    const hexStr = dyedColor.value.toString(16).padStart(6, "0");
+    const r = parseInt(hexStr.slice(0, 2), 16);
+    const g = parseInt(hexStr.slice(2, 4), 16);
+    const b = parseInt(hexStr.slice(4, 6), 16);
+    return [r, g, b];
   }
 }

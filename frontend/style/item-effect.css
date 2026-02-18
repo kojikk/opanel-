@@ -5,6 +5,7 @@
   @apply bg-size-[200%_200%] mix-blend-color-dodge opacity-60 pointer-events-none;
   @apply mask-center mask-size-[calc(100%-var(--spacing)*2)_calc(100%-var(--spacing)*2)] mask-no-repeat;
   @apply animate-[glint_6s_linear_infinite];
+  @apply absolute inset-0 top-0 left-0 z-10;
 }
 
 @keyframes glint {
@@ -16,7 +17,8 @@
   }
 }
 
-.item-potion-overlay {
+.color-overlay {
   @apply bg-[50%_calc(50%-0.5px)] bg-size-[calc(100%-var(--spacing)*2)_calc(100%-var(--spacing)*2)] bg-blend-multiply pointer-events-none;
   @apply mask-[50%_calc(50%-0.5px)] mask-size-[calc(100%-var(--spacing)*2)_calc(100%-var(--spacing)*2)] mask-no-repeat;
+  @apply absolute inset-0 top-0 left-0 z-10;
 }

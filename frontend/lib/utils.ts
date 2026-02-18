@@ -2,6 +2,7 @@ import type { GameMode, ServerType, SetState } from "./types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import locale from "locale-codes";
+import { NbtObject, NbtString } from "snbt-js";
 import { $ } from "./i18n";
 
 export function cn(...inputs: ClassValue[]) {
@@ -158,4 +159,14 @@ export function isBukkit(serverType: ServerType): boolean {
 
 export function isPreviewVersion(version: string): boolean {
   return version.includes("pre") || version.includes("rc");
+}
+
+export function textComponentToString(component: NbtString | NbtObject): string | null {
+  if(component instanceof NbtString) {
+    return component.value;
+  }
+  if(component instanceof NbtObject) {
+    return component.get<NbtString>("text")?.value ?? null;
+  }
+  return null;
 }

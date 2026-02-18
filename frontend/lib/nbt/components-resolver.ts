@@ -1,6 +1,7 @@
 import {
   type NbtBool,
-  type NbtNumber,
+  NbtList,
+  NbtNumber,
   NbtObject,
   NbtString
 } from "snbt-js";
@@ -12,6 +13,26 @@ import {
   glintItems,
 } from "./resolver";
 import { $, $mc } from "../i18n";
+import { textComponentToString } from "../utils";
+
+/**
+ * Converts the item model's model string to a texture item ID
+ *
+ * @example
+ * - minecraft:stone -> minecraft:stone
+ * - minecraft:item/stone -> minecraft:stone
+ * - stone -> minecraft:stone
+ */
+export function itemModelToTextureId(model: string | null): string | null {
+  if(!model) return null;
+
+  const colon = model.indexOf(":");
+  const namespace = colon === -1 ? "minecraft" : model.slice(0, colon);
+  const path = colon === -1 ? model : model.slice(colon + 1);
+  const pathParts = path.split("/");
+  if(pathParts.length < 2) return `${namespace}:${path}`;
+  return `${namespace}:${pathParts.slice(1).join("/")}`;
+}
 
 export class ComponentsResolver extends ItemNBTResolver {
   private enchantments: Enchantments = new Map();
@@ -43,11 +64,8 @@ export class ComponentsResolver extends ItemNBTResolver {
 
   override getName() {
     const customName = this.nbt.get<NbtObject | NbtString>("minecraft:custom_name");
-    if(customName instanceof NbtString) {
-      return customName.value;
-    }
-    if(customName instanceof NbtObject) {
-      return customName.get<NbtString>("text")?.value ?? $mc(this.id);
+    if(customName instanceof NbtString || customName instanceof NbtObject) {
+      return textComponentToString(customName) ?? $mc(this.id);
     }
     if(this.getPotionId()) {
       return $(`item.minecraft.potion.effect.${this.getPotionId()?.replace("minecraft:", "")}` as any);
@@ -57,6 +75,20 @@ export class ComponentsResolver extends ItemNBTResolver {
 
   override hasCustomName(): boolean {
     return this.hasComponent("minecraft:custom_name");
+  }
+
+  override getLore(): string[] {
+    const loreNBT = this.nbt.get<NbtList>("minecraft:lore");
+    if(!loreNBT) return [];
+
+    const lore: string[] = [];
+    for(const item of loreNBT.childs) {
+      const loreStr = textComponentToString(item as NbtObject | NbtString);
+      if(loreStr !== null) {
+        lore.push(loreStr);
+      }
+    }
+    return lore;
   }
 
   override getEnchantments() {
@@ -82,18 +114,28 @@ export class ComponentsResolver extends ItemNBTResolver {
   }
 
   override isPotion(): boolean {
-    return this.hasComponent("minecraft:potion_contents");
+    return this.hasComponent("minecraft:potion_contents") && (
+      [
+        "minecraft:potion",
+        "minecraft:splash_potion",
+        "minecraft:lingering_potion"
+      ].includes(this.id)
+    );
+  }
+
+  override isTippedArrow(): boolean {
+    return this.hasComponent("minecraft:potion_contents") && this.id === "minecraft:tipped_arrow";
   }
 
   override getPotionId(): string | null {
-    if(!this.isPotion()) return null;
+    if(!this.isPotion() && !this.isTippedArrow()) return null;
 
     const potionId = this.nbt.get<NbtString>(["minecraft:potion_contents", "potion"])?.value ?? "minecraft:empty";
     return potionId.replace(/long_|strong_/g, "");
   }
 
   override getPotionColor(): RgbColor | null {
-    if(!this.isPotion()) return null;
+    if(!this.isPotion() && !this.isTippedArrow()) return null;
 
     const customColor = this.nbt.get<NbtNumber>(["minecraft:potion_contents", "custom_color"]);
     if(customColor !== undefined) {
@@ -106,5 +148,34 @@ export class ComponentsResolver extends ItemNBTResolver {
 
     const id = this.getPotionId();
     return id ? potionColors[id] : potionColors["minecraft:water"];
+  }
+
+  override getItemModel(): string | null {
+    const model = this.nbt.get<NbtString>("minecraft:item_model")?.value;
+    return model ?? null;
+  }
+
+  override getMapId(): number | null {
+    const mapId = this.nbt.get<NbtNumber>("minecraft:map_id")?.value;
+    return mapId !== undefined ? mapId : null;
+  }
+
+  override getDyedColor(): RgbColor | null {
+    const dyedColor = this.nbt.get<NbtNumber | NbtList>("minecraft:dyed_color");
+    if(dyedColor instanceof NbtNumber) {
+      const hexStr = dyedColor.value.toString(16).padStart(6, "0");
+      const r = parseInt(hexStr.slice(0, 2), 16);
+      const g = parseInt(hexStr.slice(2, 4), 16);
+      const b = parseInt(hexStr.slice(4, 6), 16);
+      return [r, g, b];
+    }
+    if(dyedColor instanceof NbtList) {
+      if(dyedColor.childs.length < 3) return null;
+      const r = Math.min(255, (dyedColor.childs[0] as NbtNumber).value * 255);
+      const g = Math.min(255, (dyedColor.childs[1] as NbtNumber).value * 255);
+      const b = Math.min(255, (dyedColor.childs[2] as NbtNumber).value * 255);
+      return [r, g, b];
+    }
+    return null;
   }
 }

@@ -16,16 +16,36 @@ import { ItemDialog } from "./item-dialog";
 import { $, $mc } from "@/lib/i18n";
 import { VersionContext } from "@/contexts/api-context";
 import { createResolver } from "@/lib/nbt";
+import { ComponentsResolver, itemModelToTextureId } from "@/lib/nbt/components-resolver";
 
-import GlintTexture from "@/assets/images/enchanted-glint.png";
-import PotionOverlayTexture from "@/assets/images/potion-overlay.png";
+import GlintTexture from "@/assets/images/overlays/enchanted-glint.png";
+import PotionOverlayTexture from "@/assets/images/overlays/potion-overlay.png";
+import TippedArrowOverlayTexture from "@/assets/images/overlays/tipped-arrow-overlay.png";
+import LeatherHelmetOverlayTexture from "@/assets/images/overlays/leather-helmet-overlay.png";
+import LeatherChestplateOverlayTexture from "@/assets/images/overlays/leather-chestplate-overlay.png";
+import LeatherLeggingsOverlayTexture from "@/assets/images/overlays/leather-leggings-overlay.png";
+import LeatherBootsOverlayTexture from "@/assets/images/overlays/leather-boots-overlay.png";
 import "@/style/item-effect.css";
-import { ComponentsResolver } from "@/lib/nbt/components-resolver";
 
 export const AIR = "minecraft:air";
 
 function isFromExplorer(itemStack: ItemStack) {
   return itemStack.slot === -1;
+}
+
+function getLeatherOverlay(id: string): string | null {
+  switch(id) {
+    case "minecraft:leather_helmet":
+      return LeatherHelmetOverlayTexture.src;
+    case "minecraft:leather_chestplate":
+      return LeatherChestplateOverlayTexture.src;
+    case "minecraft:leather_leggings":
+      return LeatherLeggingsOverlayTexture.src;
+    case "minecraft:leather_boots":
+      return LeatherBootsOverlayTexture.src;
+    default:
+      return null;
+  }
 }
 
 export function InventoryItem({
@@ -51,11 +71,19 @@ export function InventoryItem({
     removeClickedItem,
     halfClickedItem
   } = ctx;
-  const textureItem = useMemo(() => (
-    textures.find(({ id }) => id === itemStack.id)
-  ), [textures, itemStack.id]);
   const [resolvedNBT, setResolvedNBT] = useState<ItemNBTResolver | null>(null);
   const [hovered, setHovered] = useState(false);
+  const textureIdFromItemModel = useMemo(
+    () => itemModelToTextureId(resolvedNBT?.getItemModel() ?? null),
+    [resolvedNBT]
+  );
+
+  const textureItem = useMemo(() => {
+    const byModel = textureIdFromItemModel
+      ? textures.find(({ id }) => id === textureIdFromItemModel)
+      : null;
+    return byModel ?? textures.find(({ id }) => id === itemStack.id);
+  }, [textures, itemStack.id, textureIdFromItemModel]);
   const hoveredItemTagRef = useRef<HTMLDivElement | null>(null);
 
   const handleLeftClick = () => {
@@ -211,7 +239,7 @@ export function InventoryItem({
           {/* Enchanted Glint Effect */}
           {resolvedNBT.shouldGlint() && (
             <div
-              className="item-glint absolute inset-0 top-0 left-0 z-10"
+              className="item-glint"
               style={{
                 backgroundImage: `url(${GlintTexture.src})`,
                 maskImage: `url(${textureItem ? textureItem.texture : ""})`,
@@ -221,12 +249,34 @@ export function InventoryItem({
           {/* Potion Color Overlay */}
           {resolvedNBT.isPotion() && (
             <div
-              className="item-potion-overlay absolute inset-0 top-0 left-0 z-10"
+              className="color-overlay"
               style={{
                 backgroundImage: `url(${PotionOverlayTexture.src})`,
                 backgroundColor: `rgb(${resolvedNBT.getPotionColor()?.join(",")})`,
                 maskImage: `url(${PotionOverlayTexture.src})`,
                 WebkitMaskImage: `url(${PotionOverlayTexture.src})`
+              }}/>
+          )}
+          {/* Tipped Arrow Color Overlay */}
+          {resolvedNBT.isTippedArrow() && (
+            <div
+              className="color-overlay"
+              style={{
+                backgroundImage: `url(${TippedArrowOverlayTexture.src})`,
+                backgroundColor: `rgb(${resolvedNBT.getPotionColor()?.join(",")})`,
+                maskImage: `url(${TippedArrowOverlayTexture.src})`,
+                WebkitMaskImage: `url(${TippedArrowOverlayTexture.src})`
+              }}/>
+          )}
+          {/* Leather Armor Color Overlay */}
+          {resolvedNBT.isDyedLeatherArmor() && (
+            <div
+              className="color-overlay"
+              style={{
+                backgroundImage: `url(${getLeatherOverlay(itemStack.id)})`,
+                backgroundColor: `rgb(${resolvedNBT.getDyedColor()?.join(",")})`,
+                maskImage: `url(${getLeatherOverlay(itemStack.id)})`,
+                WebkitMaskImage: `url(${getLeatherOverlay(itemStack.id)})`
               }}/>
           )}
         </>
@@ -249,9 +299,10 @@ export function InventoryItem({
           )}>
             {resolvedNBT?.getName() ?? $mc(itemStack.id)}
           </span>
-          {/* Enchantment List */}
-          {resolvedNBT?.hasEnchantments() && (
+          {/* Enchantment List & Lore */}
+          {(resolvedNBT && (resolvedNBT?.hasEnchantments() || resolvedNBT?.getLore().length > 0)) && (
             <div className="flex flex-col gap-0 mb-4 cc-7">
+              {/* Enchantment List */}
               {Array.from(resolvedNBT.getEnchantments()).map(([id, level], i) => (
                 <span key={i}>
                   {$(`enchantment.minecraft.${id.replace("minecraft:", "")}` as any) +" "}
@@ -262,11 +313,23 @@ export function InventoryItem({
                   }
                 </span>
               ))}
+              {/* Lore */}
+              <div className="flex flex-col gap-0 cc-5 italic">
+                {resolvedNBT.getLore().map((line, i) => (
+                  <span key={i}>{line}</span>
+                ))}
+              </div>
             </div>
           )}
           {/* Unbreakable */}
           {resolvedNBT?.isUnbreakable() && (
             <span className="cc-9">{$("item.unbreakable")}</span>
+          )}
+          {/* Map ID */}
+          {(resolvedNBT && resolvedNBT.getMapId() !== null) && (
+            <span className="cc-7">
+              {$("filled_map.id" as any).replace("%s", resolvedNBT.getMapId()?.toString() ?? "")}
+            </span>
           )}
           {/* Item ID */}
           <span className="cc-7">{itemStack.id}</span>
@@ -281,7 +344,7 @@ export function InventoryItem({
     </div>
   );
 
-  if(isFromExplorer(itemStack)) return itemComponent;
+  if(isFromExplorer(itemStack) || itemStack.id === AIR) return itemComponent;
 
   return (
     <ItemDialog
