@@ -36,7 +36,7 @@ export const playerColumns: ColumnDef<Player>[] = [
                 name
                 ? (
                   <div className="flex items-center gap-2 cursor-pointer">
-                    <img src={getSettings("players.avatar-provider") + uuid} alt={name} width={17} height={17}/>
+                    <img src={getSettings("players.avatar-provider") + name} alt={name} width={17} height={17}/>
                     <span className="font-semibold">{name}</span>
                   </div>
                 )

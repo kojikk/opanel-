@@ -3,8 +3,10 @@ import MinecraftSkinViewer from "minecraft-skin-viewer";
 import { getSettings } from "@/lib/settings";
 
 export function SkinViewer({
+  name,
   uuid
 }: {
+  name: string
   uuid: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -14,10 +16,10 @@ export function SkinViewer({
 
     new MinecraftSkinViewer({
       canvas: canvasRef.current,
-      skin: getSettings("players.skin-provider") + uuid,
+      skin: getSettings("players.skin-provider") + name,
       cape: getSettings("players.cape-provider") + uuid
     });
-  }, [uuid]);
+  }, [name, uuid]);
 
   return <canvas ref={canvasRef}/>;
 }

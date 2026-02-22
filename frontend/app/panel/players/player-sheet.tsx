@@ -111,7 +111,9 @@ export function PlayerSheet({
               </SheetDescription>
             </SheetHeader>
             <div className="flex-1 px-4 flex flex-col gap-5">
-              <SkinViewer uuid={player.uuid}/>
+              <SkinViewer
+                name={player.name}
+                uuid={player.uuid}/>
               <div className="flex justify-center items-center gap-2">
                 <OnlineBadge isOnline={player.isOnline}/>
                 {
