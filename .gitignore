@@ -10,6 +10,7 @@ build/
 /package.json
 /package-lock.json
 /frontend/assets/minecraft
+/core/src/main/resources/web/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
