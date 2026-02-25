@@ -1,34 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { serverApi } from "@/lib/api-client";
-import { Loader2, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
+import { PaintBucket, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { serverApi } from "@/lib/api-client";
+import { SubPage } from "../../sub-page";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { $ } from "@/lib/i18n";
+import { VersionContext } from "@/contexts/api-context";
+import { isBukkit } from "@/lib/utils";
 
-const CONFIG_FILES = [
-  { key: "server.properties", label: "server.properties" },
-  { key: "bukkit.yml", label: "bukkit.yml" },
-  { key: "spigot.yml", label: "spigot.yml" },
-  { key: "paper.yml", label: "paper.yml" },
-  { key: "paper-global.yml", label: "paper-global.yml" },
+const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+const ALL_CONFIG_FILES = [
+  { key: "server.properties", label: "server.properties", lang: "ini" },
+  { key: "bukkit.yml", label: "bukkit.yml", lang: "yaml", bukkitOnly: true },
+  { key: "spigot.yml", label: "spigot.yml", lang: "yaml", bukkitOnly: true },
+  { key: "paper.yml", label: "paper.yml", lang: "yaml", bukkitOnly: true },
+  { key: "paper-global.yml", label: "paper-global.yml", lang: "yaml", bukkitOnly: true },
+  { key: "leaves.yml", label: "leaves.yml", lang: "yaml" },
+  { key: "config/paper-world-defaults.yml", label: "paper-world-defaults.yml", lang: "yaml", bukkitOnly: true },
 ];
 
 export default function SettingsPage() {
   const { serverId } = useParams<{ serverId: string }>();
-  const [selectedFile, setSelectedFile] = useState("server.properties");
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(true);
+  const versionCtx = useContext(VersionContext);
   const api = serverApi(serverId);
+
+  const configFiles = ALL_CONFIG_FILES.filter((f) => {
+    if (f.bukkitOnly && versionCtx && !isBukkit(versionCtx.serverType)) return false;
+    return true;
+  });
+
+  const [selectedFile, setSelectedFile] = useState(configFiles[0]?.key ?? "server.properties");
+  const [content, setContent] = useState("");
+  const [originalContent, setOriginalContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const fetchConfig = async (file: string) => {
     setLoading(true);
     try {
-      const res = await api.control.getFile(file) as { content: string };
+      const res = (await api.control.getFile(file)) as { content: string };
       setContent(res.content);
+      setOriginalContent(res.content);
     } catch {
       setContent("");
+      setOriginalContent("");
     } finally {
       setLoading(false);
     }
@@ -38,45 +65,83 @@ export default function SettingsPage() {
     fetchConfig(selectedFile);
   }, [selectedFile, serverId]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [content, selectedFile]);
+
   const handleSave = async () => {
+    setSaving(true);
     try {
       await api.control.setFile(selectedFile, content);
-      toast.success("Configuration saved. Restart server to apply changes.");
+      setOriginalContent(content);
+      toast.success("Saved. Restart server to apply changes.");
     } catch {
       toast.error("Failed to save configuration");
+    } finally {
+      setSaving(false);
     }
   };
 
+  const hasChanges = content !== originalContent;
+  const currentLang = configFiles.find((f) => f.key === selectedFile)?.lang ?? "plaintext";
+
   return (
-    <div className="flex flex-col h-[calc(100vh-3rem)]">
-      <div className="p-4 border-b flex items-center gap-4">
-        <h1 className="text-lg font-bold">Settings</h1>
-        <select
-          value={selectedFile}
-          onChange={(e) => setSelectedFile(e.target.value)}
-          className="border rounded-md px-3 py-1.5 bg-background text-sm"
-        >
-          {CONFIG_FILES.map((f) => (
-            <option key={f.key} value={f.key}>{f.label}</option>
-          ))}
-        </select>
-        <Button size="sm" onClick={handleSave}>
-          <Save className="mr-2 h-3 w-3" /> Save
+    <SubPage
+      title="Settings"
+      category={$("sidebar.config")}
+      icon={<PaintBucket />}
+      hideNavbar
+      outerClassName="max-h-screen overflow-y-hidden"
+      className="flex-1 min-h-0 flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <Select value={selectedFile} onValueChange={setSelectedFile}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {configFiles.map((f) => (
+              <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button onClick={handleSave} disabled={saving || !hasChanges} size="sm">
+          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          Save
         </Button>
+        {hasChanges && <span className="text-xs text-muted-foreground">Unsaved changes (Ctrl+S)</span>}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center flex-1">
-          <Loader2 className="animate-spin h-8 w-8 text-muted-foreground" />
-        </div>
-      ) : (
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="flex-1 p-4 font-mono text-sm bg-black text-white resize-none"
-          spellCheck={false}
-        />
-      )}
-    </div>
+      <div className="flex-1 min-h-0 border rounded-sm overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="animate-spin h-8 w-8 text-muted-foreground" />
+          </div>
+        ) : (
+          <Editor
+            height="100%"
+            language={currentLang}
+            value={content}
+            onChange={(v) => setContent(v ?? "")}
+            theme="vs-dark"
+            options={{
+              minimap: { enabled: false },
+              fontSize: 13,
+              lineNumbers: "on",
+              wordWrap: "on",
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              tabSize: 2,
+            }}
+          />
+        )}
+      </div>
+    </SubPage>
   );
 }

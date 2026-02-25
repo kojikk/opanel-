@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { getServer, startServer, stopServer, deleteServer } from "@/lib/server-manager";
+import { getServer, startServer, stopServer, restartServer, deleteServer } from "@/lib/server-manager";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
   try {
@@ -35,6 +35,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       await startServer(serverId);
     } else if (action === "stop") {
       await stopServer(serverId);
+    } else if (action === "restart") {
+      await restartServer(serverId);
     } else {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }

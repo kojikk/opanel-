@@ -21,6 +21,7 @@ export function SubPage({
   outerClassName,
   pageClassName,
   className,
+  hideNavbar,
   ...props
 }: Readonly<React.ComponentProps<"div"> & {
   children?: React.ReactNode
@@ -32,14 +33,15 @@ export function SubPage({
   outerClassName?: string
   pageClassName?: string
   className?: string
+  hideNavbar?: boolean
 }>) {
   useEffect(() => {
     document.title = `OPanel - ${subTitle ?? title}`;
   }, [title, subTitle]);
 
   return (
-    <div className={cn("group max-h-screen bg-sidebar flex-1 flex flex-col", outerClassName)}>
-      <Navbar className="px-8 max-sm:px-2"/>
+    <div className={cn("group bg-sidebar flex-1 flex flex-col overflow-hidden", !hideNavbar && "max-h-screen", outerClassName)}>
+      {!hideNavbar && <Navbar className="px-8 max-sm:px-2"/>}
       <div className={cn("flex-1 p-8 flex flex-col gap-4 overflow-y-auto", !description && "gap-8", pageClassName)}>
         <div className="space-y-4">
           {category && (

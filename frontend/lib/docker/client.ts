@@ -19,6 +19,7 @@ export interface CreateServerOptions {
   rconPassword: string;
   pluginPort: number;
   dataPath: string;
+  javaVersion?: string;
 }
 
 export interface ContainerStats {
@@ -28,21 +29,36 @@ export interface ContainerStats {
   memoryPercent: number;
 }
 
+export async function isDockerAvailable(): Promise<boolean> {
+  try {
+    await docker.ping();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function createServerContainer(opts: CreateServerOptions): Promise<string> {
   const containerName = `${CONTAINER_PREFIX}${opts.name.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
+
+  const env = [
+    "EULA=TRUE",
+    `TYPE=${opts.type.toUpperCase()}`,
+    `VERSION=${opts.mcVersion}`,
+    `MEMORY=${opts.memory}`,
+    `RCON_PASSWORD=${opts.rconPassword}`,
+    "ENABLE_RCON=true",
+    "RCON_PORT=25575",
+  ];
+
+  if (opts.javaVersion) {
+    env.push(`JAVA_VERSION=java${opts.javaVersion}`);
+  }
 
   const container = await docker.createContainer({
     Image: MC_IMAGE,
     name: containerName,
-    Env: [
-      "EULA=TRUE",
-      `TYPE=${opts.type.toUpperCase()}`,
-      `VERSION=${opts.mcVersion}`,
-      `MEMORY=${opts.memory}`,
-      `RCON_PASSWORD=${opts.rconPassword}`,
-      "ENABLE_RCON=true",
-      `RCON_PORT=25575`,
-    ],
+    Env: env,
     ExposedPorts: {
       "25565/tcp": {},
       "25575/tcp": {},
@@ -70,6 +86,11 @@ export async function startContainer(containerId: string): Promise<void> {
 export async function stopContainer(containerId: string): Promise<void> {
   const container = docker.getContainer(containerId);
   await container.stop({ t: 30 });
+}
+
+export async function restartContainer(containerId: string): Promise<void> {
+  const container = docker.getContainer(containerId);
+  await container.restart({ t: 30 });
 }
 
 export async function removeContainer(containerId: string): Promise<void> {
@@ -133,6 +154,32 @@ export async function pullImage(): Promise<void> {
       });
     });
   });
+}
+
+/**
+ * Wait for RCON to become available by polling Docker container logs
+ * for the "RCON running" message from itzg/minecraft-server.
+ */
+export async function waitForRcon(containerId: string, timeoutMs: number = 120_000): Promise<boolean> {
+  const start = Date.now();
+  const container = docker.getContainer(containerId);
+
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const logBuffer = await container.logs({
+        stdout: true,
+        stderr: true,
+        tail: 50,
+      });
+      const logText = logBuffer.toString("utf-8");
+      if (logText.includes("RCON running")) return true;
+    } catch {
+      // container might not be ready yet
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+
+  return false;
 }
 
 export default docker;

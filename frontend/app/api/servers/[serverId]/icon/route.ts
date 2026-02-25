@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const data = await readServerFileBuffer(serverId, "server-icon.png");
-    return new NextResponse(data, {
+    return new NextResponse(new Uint8Array(data), {
       headers: { "Content-Type": "image/png" },
     });
   } catch {

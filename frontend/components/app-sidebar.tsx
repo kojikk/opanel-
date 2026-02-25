@@ -42,7 +42,7 @@ function getMenuItems(serverId: string) {
     ],
     configuration: [
       { name: $("sidebar.config.tasks"), url: `${base}/tasks`, icon: ClockFading },
-      { name: $("sidebar.config.bukkit-config"), url: `${base}/bukkit-config`, icon: PaintBucket },
+      { name: $("sidebar.config.settings"), url: `${base}/settings`, icon: PaintBucket },
     ],
   };
 }

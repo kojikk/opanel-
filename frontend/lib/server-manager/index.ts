@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db/client";
 import { sendCommand } from "@/lib/rcon/client";
@@ -6,42 +7,78 @@ import {
   createServerContainer,
   startContainer,
   stopContainer,
+  restartContainer,
   removeContainer,
   getContainerStatus,
   getContainerStats,
+  isDockerAvailable,
   pullImage,
   type ContainerStats,
 } from "@/lib/docker/client";
 
 const SERVERS_BASE_PATH = process.env.SERVERS_BASE_PATH || "./servers";
+const OPANEL_PLUGIN_JAR = process.env.OPANEL_PLUGIN_JAR_PATH || "";
+
+function sanitizeName(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+}
+
+async function installPlugin(dataPath: string): Promise<boolean> {
+  if (!OPANEL_PLUGIN_JAR) return false;
+  try {
+    const pluginsDir = path.join(dataPath, "plugins");
+    fs.mkdirSync(pluginsDir, { recursive: true });
+    const dest = path.join(pluginsDir, path.basename(OPANEL_PLUGIN_JAR));
+    fs.copyFileSync(OPANEL_PLUGIN_JAR, dest);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export interface ServerInfo {
   id: string;
   name: string;
+  description: string | null;
   type: string;
   mcVersion: string;
   gamePort: number;
   rconPort: number;
   pluginPort: number;
   memory: string;
+  javaVersion: string;
+  autoStart: boolean;
+  pluginInstalled: boolean;
   status: string;
   createdAt: Date;
 }
 
 export async function createServer(opts: {
   name: string;
+  description?: string;
   type: string;
   mcVersion: string;
   memory?: string;
+  javaVersion?: string;
   gamePort: number;
   rconPort: number;
   pluginPort?: number;
+  autoStart?: boolean;
 }): Promise<ServerInfo> {
+  if (!(await isDockerAvailable())) {
+    throw new Error("Docker is not available. Make sure Docker is running.");
+  }
+
   const rconPassword = crypto.randomBytes(16).toString("hex");
   const pluginPort = opts.pluginPort || 3000 + Math.floor(Math.random() * 1000);
-  const dataPath = path.resolve(SERVERS_BASE_PATH, opts.name.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
+  const dataPath = path.resolve(SERVERS_BASE_PATH, sanitizeName(opts.name));
+  const javaVersion = opts.javaVersion || "21";
+
+  fs.mkdirSync(dataPath, { recursive: true });
 
   await pullImage();
+
+  const pluginInstalled = await installPlugin(dataPath);
 
   const containerId = await createServerContainer({
     name: opts.name,
@@ -53,56 +90,40 @@ export async function createServer(opts: {
     rconPassword,
     pluginPort,
     dataPath,
+    javaVersion,
   });
 
   const server = await prisma.server.create({
     data: {
       name: opts.name,
+      description: opts.description,
       type: opts.type,
       mcVersion: opts.mcVersion,
       containerId,
-      containerName: `opanel-mc-${opts.name.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`,
+      containerName: `opanel-mc-${sanitizeName(opts.name)}`,
       rconPort: opts.rconPort,
       rconPassword,
       gamePort: opts.gamePort,
       pluginPort,
       memory: opts.memory || "2G",
+      javaVersion,
       dataPath,
+      autoStart: opts.autoStart ?? false,
+      pluginInstalled,
     },
   });
 
   await startContainer(containerId);
 
-  return {
-    id: server.id,
-    name: server.name,
-    type: server.type,
-    mcVersion: server.mcVersion,
-    gamePort: server.gamePort,
-    rconPort: server.rconPort,
-    pluginPort: server.pluginPort,
-    memory: server.memory,
-    status: "running",
-    createdAt: server.createdAt,
-  };
+  return toServerInfo(server, "running");
 }
 
 export async function listServers(): Promise<ServerInfo[]> {
   const servers = await prisma.server.findMany({ orderBy: { createdAt: "desc" } });
-
   return Promise.all(
-    servers.map(async (s) => ({
-      id: s.id,
-      name: s.name,
-      type: s.type,
-      mcVersion: s.mcVersion,
-      gamePort: s.gamePort,
-      rconPort: s.rconPort,
-      pluginPort: s.pluginPort,
-      memory: s.memory,
-      status: s.containerId ? await getContainerStatus(s.containerId) : "unknown",
-      createdAt: s.createdAt,
-    }))
+    servers.map(async (s) =>
+      toServerInfo(s, s.containerId ? await getContainerStatus(s.containerId) : "unknown")
+    )
   );
 }
 
@@ -127,6 +148,12 @@ export async function stopServer(serverId: string): Promise<void> {
   await stopContainer(server.containerId);
 }
 
+export async function restartServer(serverId: string): Promise<void> {
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.containerId) throw new Error("Server not found");
+  await restartContainer(server.containerId);
+}
+
 export async function deleteServer(serverId: string): Promise<void> {
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server) throw new Error("Server not found");
@@ -146,4 +173,26 @@ export async function executeCommand(serverId: string, command: string): Promise
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server) throw new Error("Server not found");
   return sendCommand("localhost", server.rconPort, server.rconPassword, command);
+}
+
+function toServerInfo(
+  s: { id: string; name: string; description: string | null; type: string; mcVersion: string; gamePort: number; rconPort: number; pluginPort: number; memory: string; javaVersion: string; autoStart: boolean; pluginInstalled: boolean; createdAt: Date },
+  status: string
+): ServerInfo {
+  return {
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    type: s.type,
+    mcVersion: s.mcVersion,
+    gamePort: s.gamePort,
+    rconPort: s.rconPort,
+    pluginPort: s.pluginPort,
+    memory: s.memory,
+    javaVersion: s.javaVersion,
+    autoStart: s.autoStart,
+    pluginInstalled: s.pluginInstalled,
+    status,
+    createdAt: s.createdAt,
+  };
 }

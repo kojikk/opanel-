@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { serverApi } from "@/lib/api-client";
-import { Loader2, Trash2, Earth } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Earth, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { serverApi } from "@/lib/api-client";
+import { SubPage } from "../../sub-page";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { $ } from "@/lib/i18n";
 
 interface SaveInfo {
   name: string;
@@ -14,16 +17,16 @@ interface SaveInfo {
 
 export default function SavesPage() {
   const { serverId } = useParams<{ serverId: string }>();
+  const api = serverApi(serverId);
   const [saves, setSaves] = useState<SaveInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const api = serverApi(serverId);
 
   const fetchSaves = async () => {
     try {
       const res = await api.saves.list();
       setSaves(res);
     } catch {
-      toast.error("Failed to load saves");
+      toast.error("Failed to load worlds");
     } finally {
       setLoading(false);
     }
@@ -44,6 +47,12 @@ export default function SavesPage() {
     }
   };
 
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -53,29 +62,38 @@ export default function SavesPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Saves / Worlds</h1>
-
-      <div className="grid gap-2">
-        {saves.map((save) => (
-          <div key={save.name} className="border rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Earth className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <span className="font-medium">{save.name}</span>
+    <SubPage
+      title="Saves / Worlds"
+      category={$("sidebar.server")}
+      icon={<Earth />}
+      hideNavbar
+      className="flex-1 min-h-0 flex flex-col gap-4">
+      {saves.length > 0 ? (
+        <div className="grid gap-3">
+          {saves.map((save) => (
+            <Card key={save.name} className="p-4 flex items-center justify-between shadow-none">
+              <div className="flex items-center gap-4">
+                <Earth className="h-10 w-10 text-muted-foreground" />
+                <div>
+                  <h3 className="font-semibold">{save.name}</h3>
+                  <p className="text-sm text-muted-foreground">{formatSize(save.size)}</p>
+                </div>
               </div>
-            </div>
-            <Button variant="outline" size="icon" className="text-destructive" onClick={() => handleDelete(save)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-        {saves.length === 0 && (
-          <div className="border rounded-lg p-8 text-center text-muted-foreground">
-            No worlds found
-          </div>
-        )}
-      </div>
-    </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-destructive"
+                onClick={() => handleDelete(save)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="border rounded-lg p-12 text-center text-muted-foreground">
+          No worlds found
+        </div>
+      )}
+    </SubPage>
   );
 }

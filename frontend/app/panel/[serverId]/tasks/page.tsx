@@ -2,12 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { serverApi } from "@/lib/api-client";
-import { Loader2, Plus, Trash2, Power, PowerOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  ClockFading,
+  Plus,
+  Trash2,
+  Loader2,
+  Power,
+  PowerOff,
+  Pencil,
+} from "lucide-react";
 import { toast } from "sonner";
+import { serverApi } from "@/lib/api-client";
+import { SubPage } from "../../sub-page";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { $ } from "@/lib/i18n";
 
-interface Task {
+interface TaskData {
   id: string;
   name: string;
   cron: string;
@@ -17,17 +39,13 @@ interface Task {
 
 export default function TasksPage() {
   const { serverId } = useParams<{ serverId: string }>();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
-  const [cron, setCron] = useState("0 * * * *");
-  const [commands, setCommands] = useState("");
   const api = serverApi(serverId);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchTasks = async () => {
     try {
-      const res = await api.tasks.list() as Task[];
+      const res = (await api.tasks.list()) as TaskData[];
       setTasks(res);
     } catch {
       toast.error("Failed to load tasks");
@@ -40,40 +58,20 @@ export default function TasksPage() {
     fetchTasks();
   }, [serverId]);
 
-  const handleCreate = async () => {
-    if (!name.trim() || !cron.trim() || !commands.trim()) {
-      toast.error("All fields are required");
-      return;
-    }
-    try {
-      await api.tasks.create({
-        name: name.trim(),
-        cron: cron.trim(),
-        commands: commands.split("\n").filter(Boolean),
-      });
-      toast.success("Task created");
-      setShowForm(false);
-      setName("");
-      setCron("0 * * * *");
-      setCommands("");
-      fetchTasks();
-    } catch {
-      toast.error("Failed to create task");
-    }
-  };
-
-  const handleToggle = async (task: Task) => {
+  const handleToggle = async (task: TaskData) => {
     try {
       await api.tasks.update({ id: task.id, enabled: !task.enabled });
+      toast.success(`Task ${task.enabled ? "disabled" : "enabled"}`);
       fetchTasks();
     } catch {
       toast.error("Failed to toggle task");
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (task: TaskData) => {
+    if (!confirm(`Delete task "${task.name}"?`)) return;
     try {
-      await api.tasks.remove(id);
+      await api.tasks.remove(task.id);
       toast.success("Task deleted");
       fetchTasks();
     } catch {
@@ -90,60 +88,148 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Scheduled Tasks</h1>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="mr-2 h-4 w-4" /> New Task
-        </Button>
+    <SubPage
+      title="Scheduled Tasks"
+      category={$("sidebar.config")}
+      icon={<ClockFading />}
+      hideNavbar
+      className="flex-1 min-h-0 flex flex-col gap-4">
+      <div className="flex justify-end">
+        <TaskDialog serverId={serverId} onSaved={fetchTasks}>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" /> New Task
+          </Button>
+        </TaskDialog>
       </div>
 
-      {showForm && (
-        <div className="border rounded-lg p-4 mb-4 space-y-3">
-          <input
-            type="text" value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Task name" className="w-full border rounded-md px-3 py-2 bg-background text-sm"
-          />
-          <input
-            type="text" value={cron} onChange={(e) => setCron(e.target.value)}
-            placeholder="Cron expression (e.g. 0 * * * *)" className="w-full border rounded-md px-3 py-2 bg-background text-sm font-mono"
-          />
-          <textarea
-            value={commands} onChange={(e) => setCommands(e.target.value)}
-            placeholder="Commands (one per line)" rows={3}
-            className="w-full border rounded-md px-3 py-2 bg-background text-sm font-mono"
-          />
-          <div className="flex gap-2">
-            <Button onClick={handleCreate}>Create</Button>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-          </div>
+      {tasks.length > 0 ? (
+        <div className="grid gap-3">
+          {tasks.map((task) => (
+            <Card key={task.id} className="p-4 flex items-start justify-between shadow-none">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold">{task.name}</h3>
+                  <Badge variant={task.enabled ? "default" : "secondary"} className="text-xs">
+                    {task.enabled ? "Active" : "Disabled"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground font-mono mb-2">{task.cron}</p>
+                <div className="text-xs font-mono bg-muted rounded-sm p-2 space-y-0.5">
+                  {task.commands.map((cmd, i) => (
+                    <div key={i} className="text-muted-foreground">/{cmd}</div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-1 ml-4">
+                <TaskDialog serverId={serverId} task={task} onSaved={fetchTasks}>
+                  <Button variant="ghost" size="icon">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TaskDialog>
+                <Button variant="ghost" size="icon" onClick={() => handleToggle(task)}>
+                  {task.enabled ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(task)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="border rounded-lg p-12 text-center text-muted-foreground">
+          No scheduled tasks
         </div>
       )}
+    </SubPage>
+  );
+}
 
-      <div className="grid gap-2">
-        {tasks.map((task) => (
-          <div key={task.id} className="border rounded-lg p-3 flex items-center justify-between">
-            <div>
-              <div className="font-medium">{task.name}</div>
-              <div className="text-xs text-muted-foreground font-mono">{task.cron}</div>
-              <div className="text-xs text-muted-foreground mt-1">{task.commands.join("; ")}</div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={() => handleToggle(task)}>
-                {task.enabled ? <Power className="h-4 w-4 text-green-500" /> : <PowerOff className="h-4 w-4" />}
-              </Button>
-              <Button variant="outline" size="icon" className="text-destructive" onClick={() => handleDelete(task.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+function TaskDialog({
+  serverId,
+  task,
+  onSaved,
+  children,
+}: {
+  serverId: string;
+  task?: TaskData;
+  onSaved: () => void;
+  children: React.ReactNode;
+}) {
+  const api = serverApi(serverId);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(task?.name ?? "");
+  const [cron, setCron] = useState(task?.cron ?? "0 */6 * * *");
+  const [commands, setCommands] = useState(task?.commands?.join("\n") ?? "");
+
+  useEffect(() => {
+    if (open && task) {
+      setName(task.name);
+      setCron(task.cron);
+      setCommands(task.commands.join("\n"));
+    } else if (open) {
+      setName("");
+      setCron("0 */6 * * *");
+      setCommands("");
+    }
+  }, [open, task]);
+
+  const handleSave = async () => {
+    const cmdList = commands.split("\n").map((c) => c.trim()).filter(Boolean);
+    if (!name.trim() || !cron.trim() || cmdList.length === 0) {
+      toast.error("Fill in all fields");
+      return;
+    }
+
+    try {
+      if (task) {
+        await api.tasks.update({ id: task.id, name: name.trim(), cron: cron.trim(), commands: cmdList });
+      } else {
+        await api.tasks.create({ name: name.trim(), cron: cron.trim(), commands: cmdList });
+      }
+      toast.success(task ? "Task updated" : "Task created");
+      onSaved();
+      setOpen(false);
+    } catch {
+      toast.error("Failed to save task");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{task ? "Edit Task" : "New Task"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Backup worlds" />
           </div>
-        ))}
-        {tasks.length === 0 && (
-          <div className="border rounded-lg p-8 text-center text-muted-foreground">
-            No scheduled tasks
+          <div>
+            <label className="text-sm font-medium mb-1 block">Cron Expression</label>
+            <Input value={cron} onChange={(e) => setCron(e.target.value)} placeholder="0 */6 * * *" className="font-mono" />
+            <p className="text-xs text-muted-foreground mt-1">Standard cron format (min hour day month weekday)</p>
           </div>
-        )}
-      </div>
-    </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Commands (one per line)</label>
+            <textarea
+              value={commands}
+              onChange={(e) => setCommands(e.target.value)}
+              placeholder={"say Backup starting...\nsave-all\nsay Backup complete!"}
+              rows={5}
+              className="w-full border rounded-md px-3 py-2 text-sm font-mono bg-background resize-none"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleSave}>{task ? "Update" : "Create"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

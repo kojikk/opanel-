@@ -22,14 +22,17 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, type, mcVersion, memory, gamePort, rconPort, pluginPort } = body;
+  const { name, description, type, mcVersion, memory, javaVersion, gamePort, rconPort, pluginPort, autoStart } = body;
 
   if (!name || !type || !mcVersion || !gamePort || !rconPort) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
   try {
-    const server = await createServer({ name, type, mcVersion, memory, gamePort, rconPort, pluginPort });
+    const server = await createServer({
+      name, description, type, mcVersion, memory, javaVersion,
+      gamePort, rconPort, pluginPort, autoStart,
+    });
     return NextResponse.json(server, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

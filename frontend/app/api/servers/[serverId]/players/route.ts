@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
+import { parsePlayerList } from "@/lib/rcon/parsers";
 import { executeCommand } from "@/lib/server-manager";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
@@ -14,14 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const result = await executeCommand(serverId, "list");
-    const match = result.match(/There are (\d+) of a max of (\d+) players online:(.*)/);
-    const online = match ? parseInt(match[1]) : 0;
-    const max = match ? parseInt(match[2]) : 0;
-    const playerNames = match && match[3]
-      ? match[3].split(",").map((s) => s.trim()).filter(Boolean)
-      : [];
-
-    return NextResponse.json({ online, max, players: playerNames });
+    return NextResponse.json(parsePlayerList(result));
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

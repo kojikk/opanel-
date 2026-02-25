@@ -72,6 +72,7 @@
   "sidebar.config": "配置",
   "sidebar.config.tasks": "定時任務",
   "sidebar.config.bukkit-config": "Bukkit 配置",
+  "sidebar.config.settings": "Server Config",
 
   "nav.settings": "設定",
   "nav.docs": "文檔",

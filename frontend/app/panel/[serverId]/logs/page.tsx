@@ -2,10 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { serverApi } from "@/lib/api-client";
-import { Loader2, Trash2, FileText, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  ScrollText,
+  Trash2,
+  FileText,
+  Eye,
+  ArrowLeft,
+  Loader2,
+} from "lucide-react";
+import AnsiToHtml from "ansi-to-html";
 import { toast } from "sonner";
+import { serverApi } from "@/lib/api-client";
+import { SubPage } from "../../sub-page";
+import { Button } from "@/components/ui/button";
+import { $ } from "@/lib/i18n";
+
+const ansiConverter = new AnsiToHtml({ fg: "#ccc", bg: "transparent" });
 
 interface LogFile {
   name: string;
@@ -14,11 +26,11 @@ interface LogFile {
 
 export default function LogsPage() {
   const { serverId } = useParams<{ serverId: string }>();
+  const api = serverApi(serverId);
   const [logs, setLogs] = useState<LogFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState<string | null>(null);
   const [content, setContent] = useState("");
-  const api = serverApi(serverId);
 
   const fetchLogs = async () => {
     try {
@@ -41,11 +53,12 @@ export default function LogsPage() {
       setContent(res.content);
       setViewing(fileName);
     } catch {
-      toast.error("Failed to load log");
+      toast.error("Failed to load log file");
     }
   };
 
   const handleDelete = async (fileName: string) => {
+    if (!confirm(`Delete log "${fileName}"?`)) return;
     try {
       await api.logs.remove(fileName);
       toast.success("Log deleted");
@@ -54,6 +67,23 @@ export default function LogsPage() {
     } catch {
       toast.error("Failed to delete log");
     }
+  };
+
+  const handleClearOld = async () => {
+    if (!confirm("Delete all old log files?")) return;
+    try {
+      await api.logs.remove();
+      toast.success("Old logs cleared");
+      fetchLogs();
+    } catch {
+      toast.error("Failed to clear logs");
+    }
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
   if (loading) {
@@ -66,51 +96,70 @@ export default function LogsPage() {
 
   if (viewing) {
     return (
-      <div className="flex flex-col h-[calc(100vh-3rem)]">
-        <div className="p-4 border-b flex items-center gap-2">
-          <Button variant="ghost" onClick={() => setViewing(null)}>Back</Button>
-          <span className="font-medium">{viewing}</span>
-        </div>
-        <pre className="flex-1 overflow-auto p-4 text-sm font-mono bg-black text-white">{content}</pre>
-      </div>
+      <SubPage
+        title={viewing}
+        category="Logs"
+        icon={<FileText />}
+        hideNavbar
+        className="flex-1 min-h-0 flex flex-col">
+        <Button variant="ghost" size="sm" className="self-start mb-2" onClick={() => setViewing(null)}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back to logs
+        </Button>
+        <pre className="flex-1 overflow-auto p-4 text-sm font-mono bg-black text-white rounded-sm">
+          {content.split("\n").map((line, i) => (
+            <div key={i} dangerouslySetInnerHTML={{ __html: ansiConverter.toHtml(line) }} />
+          ))}
+        </pre>
+      </SubPage>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Logs</h1>
-        <Button variant="outline" onClick={() => { api.logs.remove(); fetchLogs(); }}>
-          Clear Old Logs
+    <SubPage
+      title="Logs"
+      category={$("sidebar.management")}
+      icon={<ScrollText />}
+      hideNavbar
+      className="flex-1 min-h-0 flex flex-col gap-4">
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={handleClearOld}>
+          <Trash2 className="h-4 w-4 mr-2" /> Clear Old Logs
         </Button>
       </div>
 
-      <div className="grid gap-2">
-        {logs.map((log) => (
-          <div key={log.name} className="border rounded-lg p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{log.name}</span>
-              <span className="text-xs text-muted-foreground">{(log.size / 1024).toFixed(1)} KB</span>
-            </div>
-            <div className="flex gap-2">
-              {log.name.endsWith(".log") && (
-                <Button variant="outline" size="sm" onClick={() => handleView(log.name)}>
-                  <Eye className="h-3 w-3 mr-1" /> View
+      {logs.length > 0 ? (
+        <div className="grid gap-2">
+          {logs.map((log) => (
+            <div key={log.name} className="border rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <span className="font-medium">{log.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">{formatSize(log.size)}</span>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                {(log.name.endsWith(".log") || log.name.endsWith(".txt")) && (
+                  <Button variant="outline" size="sm" onClick={() => handleView(log.name)}>
+                    <Eye className="h-3 w-3 mr-1" /> View
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-destructive h-8 w-8"
+                  onClick={() => handleDelete(log.name)}>
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
-              )}
-              <Button variant="outline" size="icon" className="text-destructive" onClick={() => handleDelete(log.name)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              </div>
             </div>
-          </div>
-        ))}
-        {logs.length === 0 && (
-          <div className="border rounded-lg p-8 text-center text-muted-foreground">
-            No log files
-          </div>
-        )}
-      </div>
-    </div>
+          ))}
+        </div>
+      ) : (
+        <div className="border rounded-lg p-12 text-center text-muted-foreground">
+          No log files
+        </div>
+      )}
+    </SubPage>
   );
 }

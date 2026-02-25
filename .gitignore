@@ -10,7 +10,7 @@ build/
 /package.json
 /package-lock.json
 /frontend/assets/minecraft
-/core/src/main/resources/web/
+/plugin/core/src/main/resources/web/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -43,4 +43,5 @@ bin/
 
 ### OPanel ###
 frontend/servers/
+servers/
 .cursor/

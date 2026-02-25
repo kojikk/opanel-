@@ -25,20 +25,24 @@ model Session {
 }
 
 model Server {
-  id            String   @id @default(cuid())
-  name          String
-  type          String
-  mcVersion     String
-  containerId   String?  @unique
-  containerName String   @unique
-  rconPort      Int
-  rconPassword  String
-  gamePort      Int
-  pluginPort    Int      @default(3000)
-  memory        String   @default("2G")
-  dataPath      String
-  createdAt     DateTime @default(now())
-  tasks         Task[]
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  type            String
+  mcVersion       String
+  containerId     String?  @unique
+  containerName   String   @unique
+  rconPort        Int
+  rconPassword    String
+  gamePort        Int
+  pluginPort      Int      @default(3000)
+  memory          String   @default("2G")
+  javaVersion     String   @default("21")
+  dataPath        String
+  autoStart       Boolean  @default(false)
+  pluginInstalled Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  tasks           Task[]
 }
 
 model Task {

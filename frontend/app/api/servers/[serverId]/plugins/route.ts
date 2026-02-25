@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (fileName) {
     try {
       const data = await readServerFileBuffer(serverId, `plugins/${fileName}`);
-      return new NextResponse(data, {
+      return new NextResponse(new Uint8Array(data), {
         headers: {
           "Content-Type": "application/java-archive",
           "Content-Disposition": `attachment; filename="${fileName}"`,

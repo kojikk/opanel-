@@ -1,7 +1,7 @@
 "use client";
 
-import type { APIResponse, VersionResponse } from "@/lib/types";
-import { useEffect, useState } from "react";
+import type { APIResponse, ServerType, VersionResponse } from "@/lib/types";
+import { createContext, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -13,6 +13,24 @@ import { sendGetRequest } from "@/lib/api-client";
 import { useKeydown } from "@/hooks/use-keydown";
 import { Navbar } from "@/components/navbar";
 
+export interface ServerContextData {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  mcVersion: string;
+  gamePort: number;
+  rconPort: number;
+  pluginPort: number;
+  memory: string;
+  javaVersion: string;
+  autoStart: boolean;
+  pluginInstalled: boolean;
+  status: string;
+}
+
+export const ServerContext = createContext<ServerContextData | null>(null);
+
 export default function ServerPanelLayout({
   children,
 }: Readonly<{
@@ -21,6 +39,7 @@ export default function ServerPanelLayout({
   const { serverId } = useParams<{ serverId: string }>();
   const [mounted, setMounted] = useState(false);
   const [versionInfo, setVersionInfo] = useState<APIResponse<VersionResponse>>();
+  const [serverData, setServerData] = useState<ServerContextData | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -28,18 +47,19 @@ export default function ServerPanelLayout({
 
   useEffect(() => {
     if (!serverId) return;
-    const fetchVersionInfo = async () => {
+    const fetchServerInfo = async () => {
       try {
-        const server = await sendGetRequest<any>(`/api/servers/${serverId}`);
+        const server = await sendGetRequest<ServerContextData>(`/api/servers/${serverId}`);
+        setServerData(server);
         setVersionInfo({
-          serverType: server.type || "PAPER",
+          serverType: (server.type || "Paper").toUpperCase() as ServerType,
           version: server.mcVersion || "1.21",
-        } as any);
+        } as APIResponse<VersionResponse>);
       } catch (error) {
         console.error("Error fetching server info:", error);
       }
     };
-    fetchVersionInfo();
+    fetchServerInfo();
   }, [serverId]);
 
   useKeydown("a", { ctrl: true }, (e) => e.preventDefault());
@@ -51,11 +71,13 @@ export default function ServerPanelLayout({
   return (
     <SidebarProvider className="overflow-hidden">
       <VersionContext value={versionInfo}>
-        <AppSidebar serverId={serverId} />
-        <SidebarInset className="min-w-0">
-          <Navbar serverId={serverId} />
-          {children}
-        </SidebarInset>
+        <ServerContext value={serverData}>
+          <AppSidebar serverId={serverId} />
+          <SidebarInset className="min-w-0 max-h-screen overflow-hidden">
+            <Navbar serverId={serverId} />
+            {children}
+          </SidebarInset>
+        </ServerContext>
       </VersionContext>
     </SidebarProvider>
   );
