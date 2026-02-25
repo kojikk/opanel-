@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { checkAuth } from "@/lib/api";
+import { checkAuth } from "@/lib/api-client";
 
 export function useCheckAuth(success?: () => void) {
   const { push } = useRouter();

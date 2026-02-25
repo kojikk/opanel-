@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, useContext } from "react";
+import { useContext } from "react";
 import { compare } from "semver";
-import { Blocks, ClockFading, Earth, Gauge, HeartHandshake, PaintBucket, PencilRuler, ScrollText, SquareTerminal, Users } from "lucide-react";
+import { Blocks, ClockFading, Earth, Gauge, HeartHandshake, PaintBucket, PencilRuler, ScrollText, SquareTerminal, Users, ArrowLeft } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -25,71 +25,48 @@ import { Logo } from "./logo";
 import { VersionContext } from "@/contexts/api-context";
 import { $ } from "@/lib/i18n";
 
-const serverGroupItems = [
-  {
-    name: $("sidebar.server.dashboard"),
-    url: "/panel/dashboard",
-    icon: Gauge
-  },
-  {
-    name: $("sidebar.server.saves"),
-    url: "/panel/saves",
-    icon: Earth
-  },
-  {
-    name: $("sidebar.server.players"),
-    url: "/panel/players",
-    icon: Users
-  }
-];
+function getMenuItems(serverId: string) {
+  const base = `/panel/${serverId}`;
+  return {
+    server: [
+      { name: $("sidebar.server.dashboard"), url: `${base}/dashboard`, icon: Gauge },
+      { name: $("sidebar.server.saves"), url: `${base}/saves`, icon: Earth },
+      { name: $("sidebar.server.players"), url: `${base}/players`, icon: Users },
+    ],
+    management: [
+      { name: $("sidebar.management.gamerules"), url: `${base}/gamerules`, icon: PencilRuler },
+      { name: $("sidebar.management.plugins"), url: `${base}/plugins`, icon: Blocks },
+      { name: $("sidebar.management.terminal"), url: `${base}/terminal`, icon: SquareTerminal },
+      { name: $("sidebar.management.logs"), url: `${base}/logs`, icon: ScrollText },
+      { name: $("sidebar.management.code-of-conduct"), url: `${base}/code-of-conduct`, icon: HeartHandshake, minVersion: "1.21.9" },
+    ],
+    configuration: [
+      { name: $("sidebar.config.tasks"), url: `${base}/tasks`, icon: ClockFading },
+      { name: $("sidebar.config.bukkit-config"), url: `${base}/bukkit-config`, icon: PaintBucket },
+    ],
+  };
+}
 
-const managementGroupItems = [
-  {
-    name: $("sidebar.management.gamerules"),
-    url: "/panel/gamerules",
-    icon: PencilRuler
-  },
-  {
-    name: $("sidebar.management.plugins"),
-    url: "/panel/plugins",
-    icon: Blocks
-  },
-  {
-    name: $("sidebar.management.terminal"),
-    url: "/panel/terminal",
-    icon: SquareTerminal
-  },
-  {
-    name: $("sidebar.management.logs"),
-    url: "/panel/logs",
-    icon: ScrollText
-  },
-  {
-    name: $("sidebar.management.code-of-conduct"),
-    url: "/panel/code-of-conduct",
-    icon: HeartHandshake,
-    minVersion: "1.21.9"
-  }
-];
-
-const configurationGroupItems = [
-  {
-    name: $("sidebar.config.tasks"),
-    url: "/panel/tasks",
-    icon: ClockFading
-  },
-  {
-    name: $("sidebar.config.bukkit-config"),
-    url: "/panel/bukkit-config",
-    icon: PaintBucket
-  }
-];
-
-export function AppSidebar() {
+export function AppSidebar({ serverId }: { serverId?: string }) {
   const pathname = usePathname();
   const versionCtx = useContext(VersionContext);
 
-  if(!versionCtx) return <></>;
+  if (!serverId) {
+    return (
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="h-12 pl-4 bg-background border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
+          <Logo size={26}/>
+          <h1 className={cn("m-2 text-lg text-theme font-semibold select-none group-data-[state=collapsed]:hidden", minecraftAE.className)}>OPanel</h1>
+        </SidebarHeader>
+        <SidebarContent className="bg-background" />
+        <SidebarFooter className="p-4 bg-background items-end group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:items-center">
+          <SidebarTrigger className="cursor-pointer"/>
+        </SidebarFooter>
+      </Sidebar>
+    );
+  }
+
+  const items = getMenuItems(serverId);
 
   return (
     <Sidebar collapsible="icon">
@@ -99,14 +76,26 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="bg-background">
         <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/panel" className="pl-3">
+                    <ArrowLeft />
+                    <span className="whitespace-nowrap">All Servers</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
           <SidebarGroupLabel>{$("sidebar.server")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {serverGroupItems.map((item, i) => (
+              {items.server.map((item, i) => (
                 <SidebarMenuItem key={i}>
-                  <SidebarMenuButton
-                    isActive={pathname.startsWith(item.url)}
-                    asChild>
+                  <SidebarMenuButton isActive={pathname.startsWith(item.url)} asChild>
                     <Link href={item.url} className="pl-3">
                       {pathname.startsWith(item.url) && <SidebarIndicator className="left-2"/>}
                       <item.icon />
@@ -122,34 +111,11 @@ export function AppSidebar() {
           <SidebarGroupLabel>{$("sidebar.management")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {managementGroupItems.map((item, i) => (!item.minVersion || (item.minVersion && compare(versionCtx?.version, item.minVersion) >= 0)) && (
-                <SidebarMenuItem key={i}>
-                  <SidebarMenuButton
-                    isActive={pathname.startsWith(item.url)}
-                    asChild>
-                    <Link href={item.url} className="pl-3">
-                      {pathname.startsWith(item.url) && <SidebarIndicator className="left-2"/>}
-                      <item.icon />
-                      <span className="whitespace-nowrap">{item.name}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>{$("sidebar.config")}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {configurationGroupItems.map((item, i) => (
-                (item.url === "/panel/bukkit-config" && !isBukkit(versionCtx.serverType))
-                ? <Fragment key={i}/>
-                : (
+              {items.management.map((item, i) => {
+                if (item.minVersion && versionCtx && compare(versionCtx.version, item.minVersion) < 0) return null;
+                return (
                   <SidebarMenuItem key={i}>
-                    <SidebarMenuButton
-                      isActive={pathname.startsWith(item.url)}
-                      asChild>
+                    <SidebarMenuButton isActive={pathname.startsWith(item.url)} asChild>
                       <Link href={item.url} className="pl-3">
                         {pathname.startsWith(item.url) && <SidebarIndicator className="left-2"/>}
                         <item.icon />
@@ -157,8 +123,29 @@ export function AppSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
-              ))}
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>{$("sidebar.config")}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.configuration.map((item, i) => {
+                if (item.url.includes("bukkit-config") && versionCtx && !isBukkit(versionCtx.serverType)) return null;
+                return (
+                  <SidebarMenuItem key={i}>
+                    <SidebarMenuButton isActive={pathname.startsWith(item.url)} asChild>
+                      <Link href={item.url} className="pl-3">
+                        {pathname.startsWith(item.url) && <SidebarIndicator className="left-2"/>}
+                        <item.icon />
+                        <span className="whitespace-nowrap">{item.name}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

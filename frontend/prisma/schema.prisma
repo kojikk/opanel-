@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  username  String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Server {
+  id            String   @id @default(cuid())
+  name          String
+  type          String
+  mcVersion     String
+  containerId   String?  @unique
+  containerName String   @unique
+  rconPort      Int
+  rconPassword  String
+  gamePort      Int
+  pluginPort    Int      @default(3000)
+  memory        String   @default("2G")
+  dataPath      String
+  createdAt     DateTime @default(now())
+  tasks         Task[]
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  name      String
+  cron      String
+  commands  String[]
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

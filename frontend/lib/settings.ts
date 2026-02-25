@@ -11,6 +11,7 @@ import { isPreviewVersion } from "./utils";
 import { version } from "./global";
 
 const storageKey = "opanel.settings";
+const settingsVersion = "2";
 
 function getLocalStorage() {
   if(typeof window !== "undefined" && window.localStorage) {
@@ -65,7 +66,7 @@ const defaultSettings: SettingsStorageType = {
   "code-of-conduct.auto-saving-interval": 2000, // ms
   "monaco.word-wrap": false,
   "monaco.font-size": 13, // px
-  "system.language": "zh-cn",
+  "system.language": "en-us",
   "system.preview-channel": isPreviewVersion(version),
   "state.players.tab": "player-list",
   "state.plugins.tab": "enabled-list",
@@ -93,8 +94,10 @@ function getSettingsStorage(): SettingsStorageType {
     return defaultSettings;
   }
 
+  const storedVersion = storage.getItem(storageKey + ".version");
   const settingsStr = storage.getItem(storageKey);
-  if(!settingsStr) {
+
+  if(!settingsStr || storedVersion !== settingsVersion) {
     resetSettings();
     return defaultSettings;
   }
@@ -120,5 +123,7 @@ export function changeSettings<K extends keyof SettingsStorageType>(key: K, valu
 }
 
 export function resetSettings() {
-  getLocalStorage().setItem(storageKey, JSON.stringify(defaultSettings));
+  const storage = getLocalStorage();
+  storage.setItem(storageKey, JSON.stringify(defaultSettings));
+  storage.setItem(storageKey + ".version", settingsVersion);
 }
