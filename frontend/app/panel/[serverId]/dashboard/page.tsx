@@ -14,6 +14,10 @@ import {
   Square,
   RotateCw,
   Clock,
+  Pencil,
+  Check,
+  X,
+  ImagePlus,
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, YAxis } from "recharts";
 import AnsiToHtml from "ansi-to-html";
@@ -30,6 +34,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { $ } from "@/lib/i18n";
 import { ServerContext } from "../layout";
@@ -66,6 +72,14 @@ export default function DashboardPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [uptime, setUptime] = useState(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  const [iconUrl, setIconUrl] = useState<string | null>(null);
+  const [iconKey, setIconKey] = useState(0);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+
+  const [motd, setMotd] = useState("");
+  const [editingMotd, setEditingMotd] = useState(false);
+  const [motdDraft, setMotdDraft] = useState("");
 
   const latestMonitor = monitorHistory[monitorHistory.length - 1];
 
@@ -106,6 +120,17 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    const img = new Image();
+    img.src = api.icon.get() + `?t=${iconKey}`;
+    img.onload = () => setIconUrl(img.src);
+    img.onerror = () => setIconUrl(null);
+  }, [serverId, iconKey]);
+
+  useEffect(() => {
+    api.motd.get().then((r) => setMotd(r.motd)).catch(() => {});
+  }, [serverId]);
+
+  useEffect(() => {
     const eventSource = new EventSource(`/api/servers/${serverId}/terminal`);
     eventSource.onmessage = (event) => {
       try {
@@ -122,6 +147,30 @@ export default function DashboardPage() {
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await api.icon.upload(file);
+      setIconKey((k) => k + 1);
+      toast.success("Icon updated");
+    } catch {
+      toast.error("Failed to upload icon");
+    }
+    e.target.value = "";
+  };
+
+  const handleMotdSave = async () => {
+    try {
+      await api.motd.set(motdDraft);
+      setMotd(motdDraft);
+      setEditingMotd(false);
+      toast.success("MOTD updated");
+    } catch {
+      toast.error("Failed to update MOTD");
+    }
+  };
 
   const handleAction = async (action: "start" | "stop" | "restart") => {
     setActionLoading(true);
@@ -170,19 +219,86 @@ export default function DashboardPage() {
       className="flex-1 min-h-0 grid grid-rows-5 grid-cols-3 max-xl:grid-cols-2 max-lg:flex max-lg:flex-col gap-2 [&>*]:p-4">
       {/* Server Info Card */}
       <Card className={cn("row-start-1 col-span-2 flex flex-col rounded-sm shadow-none max-lg:gap-3")}>
-        <div className="flex-1 flex max-md:flex-col gap-6">
-          <div className="flex-1 flex flex-col gap-2">
+        <div className="flex-1 flex max-md:flex-col gap-4">
+          {/* Server Icon */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => iconInputRef.current?.click()}
+                className="group/icon relative w-16 h-16 shrink-0 rounded-md border bg-muted overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all"
+              >
+                {iconUrl ? (
+                  <img src={iconUrl} alt="Server icon" className="w-full h-full object-cover image-pixelated" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Server className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/icon:opacity-100 transition-opacity flex items-center justify-center">
+                  <ImagePlus className="h-5 w-5 text-white" />
+                </div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Change server icon</TooltipContent>
+          </Tooltip>
+          <input
+            ref={iconInputRef}
+            type="file"
+            accept="image/png"
+            className="hidden"
+            onChange={handleIconUpload}
+          />
+
+          <div className="flex-1 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold">{serverCtx?.name ?? "Server"}</h2>
-              <Badge variant="outline" className="cursor-default">
+              <h2 className="text-xl font-bold truncate">{serverCtx?.name ?? "Server"}</h2>
+              <Badge variant="outline" className="cursor-default shrink-0">
                 <div className={cn("w-2 h-2 rounded-full", statusColor)} />
                 {status}
               </Badge>
             </div>
-            {serverCtx?.description && (
-              <p className="text-sm text-muted-foreground">{serverCtx.description}</p>
-            )}
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm mt-1">
+
+            {/* MOTD */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              {editingMotd ? (
+                <div className="flex items-center gap-1 flex-1 min-w-0">
+                  <Input
+                    value={motdDraft}
+                    onChange={(e) => setMotdDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleMotdSave();
+                      if (e.key === "Escape") setEditingMotd(false);
+                    }}
+                    className="h-7 text-sm flex-1"
+                    placeholder="Server MOTD..."
+                    autoFocus
+                  />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleMotdSave}>
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingMotd(false)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 min-w-0 group/motd">
+                  <p className="text-sm text-muted-foreground truncate">
+                    {motd || "A Minecraft Server"}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 opacity-0 group-hover/motd:opacity-100 transition-opacity"
+                    onClick={() => { setMotdDraft(motd); setEditingMotd(true); }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
               <div><span className="font-semibold">Type:</span> {serverCtx?.type ?? "—"}</div>
               <div><span className="font-semibold">Version:</span> {serverCtx?.mcVersion ?? "—"}</div>
               <div><span className="font-semibold">Port:</span> {serverCtx?.gamePort ?? "—"}</div>
@@ -190,7 +306,8 @@ export default function DashboardPage() {
               <div><span className="font-semibold">Java:</span> {serverCtx?.javaVersion ?? "—"}</div>
             </div>
           </div>
-          <div className="flex items-start gap-2">
+
+          <div className="flex items-start gap-2 shrink-0">
             {status === "running" ? (
               <>
                 <Button variant="outline" size="sm" disabled={actionLoading} onClick={() => handleAction("restart")}>

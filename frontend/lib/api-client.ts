@@ -133,6 +133,10 @@ export function serverApi(serverId: string) {
       get: () => `${base}/icon`,
       upload: (file: File) => uploadFile(`${base}/icon`, file),
     },
+    motd: {
+      get: () => sendGetRequest<{ motd: string }>(`${base}/motd`),
+      set: (motd: string) => sendPostRequest(`${base}/motd`, { motd }),
+    },
     wsInfo: () => sendGetRequest<{
       pluginWsUrl: string;
       endpoints: { players: string; terminal: string; inventory: string };
