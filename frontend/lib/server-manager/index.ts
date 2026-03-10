@@ -19,6 +19,23 @@ import {
 const SERVERS_BASE_PATH = process.env.SERVERS_BASE_PATH || "./servers";
 const OPANEL_PLUGIN_JAR = process.env.OPANEL_PLUGIN_JAR_PATH || "";
 
+export interface ProvisioningStatus {
+  step: "queued" | "pulling" | "creating" | "starting" | "ready" | "error";
+  progress: number; // 0-100
+  message: string;
+  error?: string;
+}
+
+const provisioningState = new Map<string, ProvisioningStatus>();
+
+export function getProvisioningStatus(serverId: string): ProvisioningStatus | null {
+  return provisioningState.get(serverId) ?? null;
+}
+
+function setProvisioning(serverId: string, step: ProvisioningStatus["step"], progress: number, message: string, error?: string) {
+  provisioningState.set(serverId, { step, progress, message, error });
+}
+
 function sanitizeName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
@@ -76,11 +93,30 @@ export async function createServer(opts: {
 
   fs.mkdirSync(dataPath, { recursive: true });
 
-  await pullImage();
+  // Create DB record immediately (no containerId yet)
+  const server = await prisma.server.create({
+    data: {
+      name: opts.name,
+      description: opts.description,
+      type: opts.type,
+      mcVersion: opts.mcVersion,
+      containerName: `opanel-mc-${sanitizeName(opts.name)}`,
+      rconPort: opts.rconPort,
+      rconPassword,
+      gamePort: opts.gamePort,
+      pluginPort,
+      memory: opts.memory || "2G",
+      javaVersion,
+      dataPath,
+      autoStart: opts.autoStart ?? false,
+      pluginInstalled: false,
+    },
+  });
 
-  const pluginInstalled = await installPlugin(dataPath);
+  setProvisioning(server.id, "queued", 0, "Queued for setup...");
 
-  const containerId = await createServerContainer({
+  // Do Docker work in background
+  provisionServerAsync(server.id, {
     name: opts.name,
     type: opts.type,
     mcVersion: opts.mcVersion,
@@ -93,29 +129,49 @@ export async function createServer(opts: {
     javaVersion,
   });
 
-  const server = await prisma.server.create({
-    data: {
+  return toServerInfo(server, "provisioning");
+}
+
+async function provisionServerAsync(
+  serverId: string,
+  opts: {
+    name: string; type: string; mcVersion: string; memory: string;
+    gamePort: number; rconPort: number; rconPassword: string;
+    pluginPort: number; dataPath: string; javaVersion: string;
+  },
+) {
+  try {
+    setProvisioning(serverId, "pulling", 20, "Pulling Docker image...");
+    await pullImage();
+
+    setProvisioning(serverId, "creating", 50, "Creating container...");
+    const pluginInstalled = await installPlugin(opts.dataPath);
+
+    const containerId = await createServerContainer({
       name: opts.name,
-      description: opts.description,
       type: opts.type,
       mcVersion: opts.mcVersion,
-      containerId,
-      containerName: `opanel-mc-${sanitizeName(opts.name)}`,
-      rconPort: opts.rconPort,
-      rconPassword,
+      memory: opts.memory,
       gamePort: opts.gamePort,
-      pluginPort,
-      memory: opts.memory || "2G",
-      javaVersion,
-      dataPath,
-      autoStart: opts.autoStart ?? false,
-      pluginInstalled,
-    },
-  });
+      rconPort: opts.rconPort,
+      rconPassword: opts.rconPassword,
+      pluginPort: opts.pluginPort,
+      dataPath: opts.dataPath,
+      javaVersion: opts.javaVersion,
+    });
 
-  await startContainer(containerId);
+    await prisma.server.update({
+      where: { id: serverId },
+      data: { containerId, pluginInstalled },
+    });
 
-  return toServerInfo(server, "running");
+    setProvisioning(serverId, "starting", 80, "Starting server...");
+    await startContainer(containerId);
+
+    setProvisioning(serverId, "ready", 100, "Server is ready!");
+  } catch (e) {
+    setProvisioning(serverId, "error", 0, "Provisioning failed", (e as Error).message);
+  }
 }
 
 export async function listServers(): Promise<ServerInfo[]> {

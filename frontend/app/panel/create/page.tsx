@@ -38,7 +38,7 @@ export default function CreateServerPage() {
 
     setCreating(true);
     try {
-      await sendPostRequest("/api/servers", {
+      const server = await sendPostRequest<{ id: string }>("/api/servers", {
         name: name.trim(),
         type,
         mcVersion,
@@ -46,11 +46,9 @@ export default function CreateServerPage() {
         gamePort,
         rconPort,
       });
-      toast.success("Server created successfully");
-      router.push("/panel");
+      router.push(`/panel/${server.id}/setup`);
     } catch (e: any) {
       toast.error("Failed to create server", { description: e.response?.data?.error || e.message });
-    } finally {
       setCreating(false);
     }
   };

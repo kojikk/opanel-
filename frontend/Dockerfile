@@ -12,7 +12,11 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm prisma generate
+RUN pnpm prisma generate && \
+    if [ ! -d "node_modules/.prisma" ]; then \
+      PDIR=$(find node_modules/.pnpm -path '*/.prisma' -type d 2>/dev/null | head -1); \
+      [ -n "$PDIR" ] && cp -r "$PDIR" node_modules/.prisma; \
+    fi
 RUN --mount=type=cache,target=/app/.next/cache pnpm build
 
 FROM base AS runner
