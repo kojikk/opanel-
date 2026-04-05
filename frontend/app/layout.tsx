@@ -22,7 +22,8 @@ export default function RootLayout({
   return (
     <html lang="zh-cn" suppressHydrationWarning>
       <body
-        className={cn(notoSansSC.className, notoColorEmoji.variable, googleSansCode.variable, "antialiased overflow-hidden")}>
+        className={cn(notoSansSC.className, notoColorEmoji.variable, googleSansCode.variable, "antialiased overflow-hidden bg-background")}>
+        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-blue-50/40 via-background to-amber-50/30 dark:from-blue-950/20 dark:via-background dark:to-purple-950/15" />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

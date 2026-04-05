@@ -21,16 +21,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: ./frontend/package-lock.json
-    - run: npm i
+        cache: 'pnpm'
+        cache-dependency-path: ./frontend/pnpm-lock.yaml
+    - run: pnpm install --frozen-lockfile
 
     - name: Test building frontend
-      run: npm run build
+      run: pnpm build
 
   jar:
 
@@ -41,12 +43,17 @@ jobs:
         java-version: [21]
         gradle-version: [8.14]
 
+    defaults:
+      run:
+        working-directory: ./plugin
+
     steps:
     - name: Remove unnecessary files to release disk space
       run: |
         df -h
         rm -rf /opt/hostedtoolcache
         df -h
+      working-directory: .
 
     - uses: actions/checkout@v4
     - name: Use JDK 21, 17, 14
@@ -67,4 +74,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: opanel-jars
-        path: ./build/libs/*
+        path: ./plugin/build/libs/*

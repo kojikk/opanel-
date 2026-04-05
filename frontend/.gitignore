@@ -30,8 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# npm lockfile (project uses pnpm)
+package-lock.json
+
 # env files (can opt-in for committing if needed)
 .env
+
+# server data
+/servers/
 
 # vercel
 .vercel

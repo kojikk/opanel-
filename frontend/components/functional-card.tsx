@@ -22,7 +22,7 @@ export function FunctionalCard({
   innerClassName?: string
 }>>) {
   return (
-    <Card className={cn(className, "!p-0 flex flex-col gap-3 rounded-sm shadow-none")}>
+    <Card className={cn(className, "!p-0 flex flex-col gap-3 rounded-xl")}>
       <div className="p-4 pb-0 flex justify-between items-center">
         <div className="flex items-center gap-3 pl-2">
           <props.icon size={20}/>

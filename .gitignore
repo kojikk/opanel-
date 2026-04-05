@@ -9,7 +9,9 @@ build/
 /node_modules/
 /package.json
 /package-lock.json
-/frontend/assets/minecraft
+/frontend/assets/minecraft/*
+!/frontend/assets/minecraft/en_us.json
+/plugin/core/src/main/resources/web/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -39,3 +41,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### OPanel ###
+/frontend/servers/
+/servers/
+.cursor/

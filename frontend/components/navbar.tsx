@@ -6,9 +6,9 @@ import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SidebarTrigger } from "./ui/sidebar";
 import { $ } from "@/lib/i18n";
-import { logout } from "@/lib/api";
+import { logout } from "@/lib/api-client";
 
-export function Navbar({ className, ...props }: React.ComponentProps<"nav">) {
+export function Navbar({ className, serverId, ...props }: React.ComponentProps<"nav"> & { serverId?: string }) {
   const handleLogout = async () => {
     await logout();
     window.location.href = "/login";
@@ -16,21 +16,19 @@ export function Navbar({ className, ...props }: React.ComponentProps<"nav">) {
 
   return (
     <nav
-      className={cn("min-h-12 bg-background border-b border-b-sidebar-border flex items-center justify-end *:cursor-pointer", className)}
+      className={cn("min-h-12 bg-glass/80 backdrop-blur-md border-b border-b-glass-border flex items-center justify-end *:cursor-pointer", className)}
       {...props}>
-      <SidebarTrigger className="mr-auto hidden max-md:flex cursor-pointer"/>
+      {serverId && <SidebarTrigger className="mr-auto hidden max-md:flex cursor-pointer"/>}
       <div className="space-x-2 mr-2 max-sm:mr-0 max-sm:space-x-0">
-        <Button
-          variant="ghost"
-          asChild>
-          <Link href="/panel/settings">
-            <Settings />
-            <span className="max-sm:hidden">{$("nav.settings")}</span>
-          </Link>
-        </Button>
-        <Button
-          variant="ghost"
-          asChild>
+        {serverId && (
+          <Button variant="ghost" asChild>
+            <Link href={`/panel/${serverId}/settings`}>
+              <Settings />
+              <span className="max-sm:hidden">{$("nav.settings")}</span>
+            </Link>
+          </Button>
+        )}
+        <Button variant="ghost" asChild>
           <Link
             href="https://opanel.cn/docs/quick-start.html"
             target="_blank"
@@ -41,18 +39,11 @@ export function Navbar({ className, ...props }: React.ComponentProps<"nav">) {
           </Link>
         </Button>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => handleLogout()}>
+      <Button variant="ghost" size="icon" onClick={() => handleLogout()}>
         <LogOut />
       </Button>
       <ThemeToggle />
-      <Button
-        className="max-sm:hidden"
-        variant="ghost"
-        size="icon"
-        asChild>
+      <Button className="max-sm:hidden" variant="ghost" size="icon" asChild>
         <Link href="/about">
           <Info />
         </Link>

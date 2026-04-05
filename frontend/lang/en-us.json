@@ -72,6 +72,7 @@
   "sidebar.config": "Configurations",
   "sidebar.config.tasks": "Scheduled Tasks",
   "sidebar.config.bukkit-config": "Bukkit Config",
+  "sidebar.config.settings": "Server Config",
 
   "nav.settings": "Settings",
   "nav.docs": "Docs",
