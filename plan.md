@@ -184,11 +184,9 @@
   - [x] Почищены импорты в `WebServer.java` (явные вместо wildcard `.*`).
   - [x] Оставлены headless‑эндпоинты: `Gamerules`, `Info`, `Monitor`, `Version` контроллеры + WS endpoints (`Players`, `Inventory`, `Terminal`) + `JwtManager` (WS auth).
 
-- **3.1.2. Упорядочить Java‑модули**
-  - [ ] Проверить, какие модули реально нужны для первой версии standalone‑панели (например, только текущие версии Fabric/Forge/Spigot, без старых).
-  - [ ] Рассмотреть возможность:
-    - Явного помечания legacy‑модулей (названием/комментарием).
-    - Или их полного удаления/выноса в отдельную ветку, если они не будут поддерживаться.
+- **3.1.2. Упорядочить Java‑модули** ✅
+  - [x] Проверены все 38 модулей (1 core, 3 helper, 34 version‑specific). Все содержат реальный код и покрывают 5 загрузчиков (Spigot, Fabric, Forge, NeoForge, Folia).
+  - [x] Старые версии (1.16.1, 1.19.x) оставлены — сборка on‑demand, лишней нагрузки нет. Удаление не требуется.
 
 - **3.1.3. Удалить/почистить неиспользуемый frontend‑код** ✅
   - [x] Удалены все старые страницы `app/panel/{dashboard,bukkit-config,code-of-conduct,gamerules,logs,players,plugins,saves,settings,tasks,terminal}/` (без `[serverId]`).
