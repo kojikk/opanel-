@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { serverApi } from "@/lib/api-client";
 import { SubPage } from "../../sub-page";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { $ } from "@/lib/i18n";
 
 const ansiConverter = new AnsiToHtml({ fg: "#ccc", bg: "transparent" });
@@ -31,6 +32,8 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState<string | null>(null);
   const [content, setContent] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [clearOldOpen, setClearOldOpen] = useState(false);
 
   const fetchLogs = async () => {
     try {
@@ -58,7 +61,6 @@ export default function LogsPage() {
   };
 
   const handleDelete = async (fileName: string) => {
-    if (!confirm(`Delete log "${fileName}"?`)) return;
     try {
       await api.logs.remove(fileName);
       toast.success("Log deleted");
@@ -70,7 +72,6 @@ export default function LogsPage() {
   };
 
   const handleClearOld = async () => {
-    if (!confirm("Delete all old log files?")) return;
     try {
       await api.logs.remove();
       toast.success("Old logs cleared");
@@ -122,7 +123,7 @@ export default function LogsPage() {
       hideNavbar
       className="flex-1 min-h-0 flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button variant="outline" onClick={handleClearOld}>
+        <Button variant="outline" onClick={() => setClearOldOpen(true)}>
           <Trash2 className="h-4 w-4 mr-2" /> Clear Old Logs
         </Button>
       </div>
@@ -148,7 +149,7 @@ export default function LogsPage() {
                   variant="outline"
                   size="icon"
                   className="text-destructive h-8 w-8"
-                  onClick={() => handleDelete(log.name)}>
+                  onClick={() => setDeleteTarget(log.name)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -160,6 +161,25 @@ export default function LogsPage() {
           No log files
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Delete Log"
+        description={`Are you sure you want to delete "${deleteTarget}"?`}
+        confirmText="Delete"
+        destructive
+        onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget); }}
+      />
+      <ConfirmDialog
+        open={clearOldOpen}
+        onOpenChange={setClearOldOpen}
+        title="Clear Old Logs"
+        description="This will delete all old log files. Current log files will not be affected."
+        confirmText="Clear"
+        destructive
+        onConfirm={handleClearOld}
+      />
     </SubPage>
   );
 }

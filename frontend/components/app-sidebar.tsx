@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useContext } from "react";
-import { compare } from "semver";
-import { Blocks, ClockFading, Earth, Gauge, HeartHandshake, PaintBucket, PencilRuler, ScrollText, SquareTerminal, Users, ArrowLeft } from "lucide-react";
+import { Blocks, ClockFading, Earth, Gauge, PaintBucket, PencilRuler, ScrollText, SquareTerminal, Users, ArrowLeft } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -38,7 +37,8 @@ function getMenuItems(serverId: string) {
       { name: $("sidebar.management.plugins"), url: `${base}/plugins`, icon: Blocks },
       { name: $("sidebar.management.terminal"), url: `${base}/terminal`, icon: SquareTerminal },
       { name: $("sidebar.management.logs"), url: `${base}/logs`, icon: ScrollText },
-      { name: $("sidebar.management.code-of-conduct"), url: `${base}/code-of-conduct`, icon: HeartHandshake, minVersion: "1.21.9" },
+      // TODO: code-of-conduct page not yet implemented
+      // { name: $("sidebar.management.code-of-conduct"), url: `${base}/code-of-conduct`, icon: HeartHandshake, minVersion: "1.21.9" },
     ],
     configuration: [
       { name: $("sidebar.config.tasks"), url: `${base}/tasks`, icon: ClockFading },
@@ -54,12 +54,12 @@ export function AppSidebar({ serverId }: { serverId?: string }) {
   if (!serverId) {
     return (
       <Sidebar collapsible="icon">
-        <SidebarHeader className="h-12 pl-4 bg-background border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
+        <SidebarHeader className="h-12 pl-4 bg-transparent border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
           <Logo size={26}/>
           <h1 className={cn("m-2 text-lg text-theme font-semibold select-none group-data-[state=collapsed]:hidden", minecraftAE.className)}>OPanel</h1>
         </SidebarHeader>
-        <SidebarContent className="bg-background" />
-        <SidebarFooter className="p-4 bg-background items-end group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:items-center">
+        <SidebarContent className="bg-transparent" />
+        <SidebarFooter className="p-4 bg-transparent items-end group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:items-center">
           <SidebarTrigger className="cursor-pointer"/>
         </SidebarFooter>
       </Sidebar>
@@ -70,11 +70,11 @@ export function AppSidebar({ serverId }: { serverId?: string }) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-12 pl-4 bg-background border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
+      <SidebarHeader className="h-12 pl-4 bg-transparent border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
         <Logo size={26}/>
         <h1 className={cn("m-2 text-lg text-theme font-semibold select-none group-data-[state=collapsed]:hidden", minecraftAE.className)}>OPanel</h1>
       </SidebarHeader>
-      <SidebarContent className="bg-background">
+      <SidebarContent className="bg-transparent">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -111,9 +111,7 @@ export function AppSidebar({ serverId }: { serverId?: string }) {
           <SidebarGroupLabel>{$("sidebar.management")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.management.map((item, i) => {
-                if (item.minVersion && versionCtx && compare(versionCtx.version, item.minVersion) < 0) return null;
-                return (
+              {items.management.map((item, i) => (
                   <SidebarMenuItem key={i}>
                     <SidebarMenuButton isActive={pathname.startsWith(item.url)} asChild>
                       <Link href={item.url} className="pl-3">
@@ -123,8 +121,7 @@ export function AppSidebar({ serverId }: { serverId?: string }) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                );
-              })}
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -150,7 +147,7 @@ export function AppSidebar({ serverId }: { serverId?: string }) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 bg-background items-end group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:items-center">
+      <SidebarFooter className="p-4 bg-transparent items-end group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:items-center">
         <SidebarTrigger className="cursor-pointer"/>
       </SidebarFooter>
     </Sidebar>

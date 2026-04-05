@@ -1,7 +1,7 @@
 "use client";
 
 import type { APIResponse, ServerType, VersionResponse } from "@/lib/types";
-import { createContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -9,27 +9,10 @@ import {
   SidebarProvider
 } from "@/components/ui/sidebar";
 import { VersionContext } from "@/contexts/api-context";
+import { ServerContext, type ServerContextData } from "@/contexts/server-context";
 import { sendGetRequest } from "@/lib/api-client";
 import { useKeydown } from "@/hooks/use-keydown";
 import { Navbar } from "@/components/navbar";
-
-export interface ServerContextData {
-  id: string;
-  name: string;
-  description: string | null;
-  type: string;
-  mcVersion: string;
-  gamePort: number;
-  rconPort: number;
-  pluginPort: number;
-  memory: string;
-  javaVersion: string;
-  autoStart: boolean;
-  pluginInstalled: boolean;
-  status: string;
-}
-
-export const ServerContext = createContext<ServerContextData | null>(null);
 
 export default function ServerPanelLayout({
   children,

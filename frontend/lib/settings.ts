@@ -1,6 +1,4 @@
 import type { LanguageCode } from "@/lang";
-import type { ConsoleLogLevel } from "./ws/terminal";
-import type { ConfigFile } from "@/app/panel/bukkit-config/page";
 import {
   AvatarProvider,
   CapeProvider,
@@ -29,7 +27,7 @@ export type SettingsStorageType = {
   "terminal.word-wrap": boolean
   "terminal.font-size": number
   "terminal.max-log-lines": number
-  "terminal.log-level": ConsoleLogLevel
+  "terminal.log-level": string
   "terminal.log-time": boolean
   "terminal.thread-name": boolean
   "terminal.source-name": boolean
@@ -46,7 +44,7 @@ export type SettingsStorageType = {
   "state.plugins.tab": "enabled-list" | "disabled-list"
   "state.terminal.history": string[]
   "state.code-of-conduct.current-editing"?: string
-  "state.bukkit-config.current-editing": ConfigFile
+  "state.bukkit-config.current-editing": string
 };
 
 const defaultSettings: SettingsStorageType = {

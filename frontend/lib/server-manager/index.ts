@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { execFile } from "child_process";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db/client";
@@ -18,9 +19,21 @@ import {
 
 const SERVERS_BASE_PATH = process.env.SERVERS_BASE_PATH || "./servers";
 const OPANEL_PLUGIN_JAR = process.env.OPANEL_PLUGIN_JAR_PATH || "";
+const PLUGIN_PROJECT_DIR = path.resolve(process.env.OPANEL_PLUGIN_PROJECT_DIR || path.join(process.cwd(), "../plugin"));
+const PLUGIN_BUILD_DIR = path.resolve(process.env.OPANEL_PLUGIN_BUILD_DIR || path.join(PLUGIN_PROJECT_DIR, "build/libs"));
+
+function getPluginVersion(): string {
+  try {
+    const props = fs.readFileSync(path.join(PLUGIN_PROJECT_DIR, "gradle.properties"), "utf-8");
+    const match = props.match(/^version\s*=\s*(.+)$/m);
+    return match?.[1]?.trim() || "";
+  } catch {
+    return "";
+  }
+}
 
 export interface ProvisioningStatus {
-  step: "queued" | "pulling" | "creating" | "starting" | "ready" | "error";
+  step: "queued" | "pulling" | "building" | "creating" | "starting" | "ready" | "error";
   progress: number; // 0-100
   message: string;
   error?: string;
@@ -40,13 +53,167 @@ function sanitizeName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
 
-async function installPlugin(dataPath: string): Promise<boolean> {
-  if (!OPANEL_PLUGIN_JAR) return false;
+/**
+ * Maps panel server type → Gradle module prefix and JAR name prefix.
+ * Paper/Bukkit/Leaves use spigot modules (API-compatible).
+ * Spigot modules output JARs as `opanel-bukkit-*`, others use their loader name.
+ */
+const LOADER_CONFIG: Record<string, { module: string; jar: string }> = {
+  paper:    { module: "spigot",   jar: "bukkit" },
+  bukkit:   { module: "spigot",   jar: "bukkit" },
+  spigot:   { module: "spigot",   jar: "bukkit" },
+  leaves:   { module: "spigot",   jar: "bukkit" },
+  fabric:   { module: "fabric",   jar: "fabric" },
+  forge:    { module: "forge",    jar: "forge" },
+  neoforge: { module: "neoforge", jar: "neoforge" },
+  folia:    { module: "folia",    jar: "folia" },
+};
+
+const parseVer = (v: string) => v.split(".").map(Number);
+
+/** Compare two version arrays. Returns negative if a < b, 0 if equal, positive if a > b. */
+function compareVer(a: number[], b: number[]): number {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+/**
+ * Find the best matching Gradle module for a server type + MC version.
+ * Scans plugin/ for directories like `spigot-1.21.9`, picks highest version ≤ mcVersion.
+ * Returns { module: "spigot-1.21.9", jarPrefix: "opanel-bukkit-1.21.9" } or null.
+ */
+function findBestModule(serverType: string, mcVersion: string): { module: string; jarName: string } | null {
+  const config = LOADER_CONFIG[serverType.toLowerCase()];
+  if (!config) return null;
+
+  try {
+    const dirs = fs.readdirSync(PLUGIN_PROJECT_DIR, { withFileTypes: true });
+    const prefix = `${config.module}-`;
+    const serverVer = parseVer(mcVersion);
+    const candidates: { dir: string; version: number[] }[] = [];
+
+    for (const d of dirs) {
+      if (d.isDirectory() && d.name.startsWith(prefix) && d.name !== `${config.module}-helper`) {
+        const ver = parseVer(d.name.slice(prefix.length));
+        if (compareVer(ver, serverVer) <= 0) {
+          candidates.push({ dir: d.name, version: ver });
+        }
+      }
+    }
+
+    if (candidates.length === 0) return null;
+
+    // Pick highest compatible version
+    candidates.sort((a, b) => compareVer(b.version, a.version));
+    const best = candidates[0];
+    const versionStr = best.dir.slice(prefix.length);
+    const pluginVer = getPluginVersion();
+    const jarName = pluginVer
+      ? `opanel-${config.jar}-${versionStr}-build-${pluginVer}.jar`
+      : `opanel-${config.jar}-${versionStr}-build.jar`;
+    return { module: best.dir, jarName };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Find an already-built JAR in PLUGIN_BUILD_DIR.
+ * Tries exact name first, then falls back to glob matching the base pattern.
+ */
+function findBuiltJar(jarName: string): string | null {
+  const jarPath = path.join(PLUGIN_BUILD_DIR, jarName);
+  if (fs.existsSync(jarPath)) return jarPath;
+
+  // Fallback: match without version suffix (e.g. opanel-bukkit-1.21.9-build*.jar)
+  const base = jarName.replace(/\.jar$/, "");
+  try {
+    const files = fs.readdirSync(PLUGIN_BUILD_DIR);
+    const match = files.find((f) => f.startsWith(base) && f.endsWith(".jar"));
+    return match ? path.join(PLUGIN_BUILD_DIR, match) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build a single Gradle module on demand.
+ * Runs `./gradlew :<module>:build -x test` and returns the output JAR path.
+ */
+function buildPluginModule(moduleName: string, jarName: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const isWindows = process.platform === "win32";
+    const gradlew = isWindows ? "gradlew.bat" : "./gradlew";
+
+    execFile(
+      gradlew,
+      [`:${moduleName}:build`, "-x", "test"],
+      { cwd: PLUGIN_PROJECT_DIR, timeout: 600_000, maxBuffer: 10 * 1024 * 1024 },
+      (error, _stdout, stderr) => {
+        if (error) {
+          reject(new Error(`Plugin build failed: ${stderr || error.message}`));
+          return;
+        }
+        const jarPath = path.join(PLUGIN_BUILD_DIR, jarName);
+        if (fs.existsSync(jarPath)) {
+          resolve(jarPath);
+        } else {
+          reject(new Error(`Build succeeded but JAR not found at ${jarPath}`));
+        }
+      },
+    );
+  });
+}
+
+/**
+ * Install the OPanel plugin into a server's plugins/ directory.
+ * 1. Explicit OPANEL_PLUGIN_JAR_PATH env (highest priority)
+ * 2. Pre-built JAR from build/libs matching server type + version
+ * 3. On-demand Gradle build of the matching module
+ */
+async function installPlugin(
+  dataPath: string,
+  serverType: string,
+  mcVersion: string,
+  onStatus?: (message: string) => void,
+): Promise<boolean> {
+  // 1. Explicit path from env
+  if (OPANEL_PLUGIN_JAR && fs.existsSync(OPANEL_PLUGIN_JAR)) {
+    return copyJarToPlugins(OPANEL_PLUGIN_JAR, dataPath);
+  }
+
+  // 2. Find best matching module
+  const match = findBestModule(serverType, mcVersion);
+  if (!match) {
+    onStatus?.("No compatible plugin module found, skipping plugin installation");
+    return false;
+  }
+
+  // 3. Check if already built
+  let jarPath = findBuiltJar(match.jarName);
+  if (jarPath) {
+    return copyJarToPlugins(jarPath, dataPath);
+  }
+
+  // 4. Build on demand
+  onStatus?.(`Building plugin ${match.module}...`);
+  try {
+    jarPath = await buildPluginModule(match.module, match.jarName);
+    return copyJarToPlugins(jarPath, dataPath);
+  } catch (e) {
+    onStatus?.(`Plugin build failed: ${(e as Error).message}`);
+    return false;
+  }
+}
+
+function copyJarToPlugins(jarPath: string, dataPath: string): boolean {
   try {
     const pluginsDir = path.join(dataPath, "plugins");
     fs.mkdirSync(pluginsDir, { recursive: true });
-    const dest = path.join(pluginsDir, path.basename(OPANEL_PLUGIN_JAR));
-    fs.copyFileSync(OPANEL_PLUGIN_JAR, dest);
+    fs.copyFileSync(jarPath, path.join(pluginsDir, path.basename(jarPath)));
     return true;
   } catch {
     return false;
@@ -144,9 +311,14 @@ async function provisionServerAsync(
     setProvisioning(serverId, "pulling", 20, "Pulling Docker image...");
     await pullImage();
 
-    setProvisioning(serverId, "creating", 50, "Creating container...");
-    const pluginInstalled = await installPlugin(opts.dataPath);
+    // Build/install plugin (may trigger on-demand Gradle build)
+    setProvisioning(serverId, "building", 35, "Installing OPanel plugin...");
+    const pluginInstalled = await installPlugin(
+      opts.dataPath, opts.type, opts.mcVersion,
+      (msg) => setProvisioning(serverId, "building", 40, msg),
+    );
 
+    setProvisioning(serverId, "creating", 55, "Creating container...");
     const containerId = await createServerContainer({
       name: opts.name,
       type: opts.type,

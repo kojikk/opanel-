@@ -8,6 +8,7 @@ import { serverApi } from "@/lib/api-client";
 import { SubPage } from "../../sub-page";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { $ } from "@/lib/i18n";
 
 interface SaveInfo {
@@ -20,6 +21,7 @@ export default function SavesPage() {
   const api = serverApi(serverId);
   const [saves, setSaves] = useState<SaveInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<SaveInfo | null>(null);
 
   const fetchSaves = async () => {
     try {
@@ -37,7 +39,6 @@ export default function SavesPage() {
   }, [serverId]);
 
   const handleDelete = async (save: SaveInfo) => {
-    if (!confirm(`Delete world "${save.name}"? This cannot be undone.`)) return;
     try {
       await api.saves.remove(save.name);
       toast.success("World deleted");
@@ -83,7 +84,7 @@ export default function SavesPage() {
                 variant="outline"
                 size="icon"
                 className="text-destructive"
-                onClick={() => handleDelete(save)}>
+                onClick={() => setDeleteTarget(save)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </Card>
@@ -94,6 +95,17 @@ export default function SavesPage() {
           No worlds found
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Delete World"
+        description={`Are you sure you want to delete "${deleteTarget?.name}"? This cannot be undone.`}
+        confirmText="Delete"
+        destructive
+        confirmInput={deleteTarget?.name}
+        onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget); }}
+      />
     </SubPage>
   );
 }

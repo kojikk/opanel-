@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface ProvisioningStatus {
-  step: "queued" | "pulling" | "creating" | "starting" | "ready" | "error";
+  step: "queued" | "pulling" | "building" | "creating" | "starting" | "ready" | "error";
   progress: number;
   message: string;
   error?: string;
@@ -18,12 +18,13 @@ interface ProvisioningStatus {
 
 const STEPS = [
   { key: "pulling", label: "Pulling Docker image" },
+  { key: "building", label: "Building OPanel plugin" },
   { key: "creating", label: "Creating container" },
   { key: "starting", label: "Starting server" },
   { key: "ready", label: "Server is ready" },
 ] as const;
 
-const stepOrder = ["queued", "pulling", "creating", "starting", "ready"] as const;
+const stepOrder = ["queued", "pulling", "building", "creating", "starting", "ready"] as const;
 
 function getStepIndex(step: string) {
   return stepOrder.indexOf(step as typeof stepOrder[number]);

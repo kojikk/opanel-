@@ -1,8 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { getProvisioningStatus } from "@/lib/server-manager";
-import { getServer } from "@/lib/server-manager";
+import { getProvisioningStatus, getServer } from "@/lib/server-manager";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
   try {

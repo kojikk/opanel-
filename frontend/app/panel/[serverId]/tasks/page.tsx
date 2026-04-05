@@ -27,6 +27,7 @@ import {
   DialogClose,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { $ } from "@/lib/i18n";
 
 interface TaskData {
@@ -42,6 +43,7 @@ export default function TasksPage() {
   const api = serverApi(serverId);
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<TaskData | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -69,7 +71,6 @@ export default function TasksPage() {
   };
 
   const handleDelete = async (task: TaskData) => {
-    if (!confirm(`Delete task "${task.name}"?`)) return;
     try {
       await api.tasks.remove(task.id);
       toast.success("Task deleted");
@@ -129,7 +130,7 @@ export default function TasksPage() {
                 <Button variant="ghost" size="icon" onClick={() => handleToggle(task)}>
                   {task.enabled ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(task)}>
+                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteTarget(task)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -141,6 +142,16 @@ export default function TasksPage() {
           No scheduled tasks
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Delete Task"
+        description={`Are you sure you want to delete "${deleteTarget?.name}"?`}
+        confirmText="Delete"
+        destructive
+        onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget); }}
+      />
     </SubPage>
   );
 }

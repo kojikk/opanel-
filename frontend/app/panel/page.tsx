@@ -6,6 +6,7 @@ import { Plus, Server, Play, Square, Trash2, Loader2 } from "lucide-react";
 import { sendGetRequest, sendPatchRequest, sendDeleteRequest } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "sonner";
 
 interface ServerInfo {
@@ -24,6 +25,7 @@ export default function ServerListPage() {
   const router = useRouter();
   const [servers, setServers] = useState<ServerInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<ServerInfo | null>(null);
 
   const fetchServers = async () => {
     try {
@@ -52,8 +54,7 @@ export default function ServerListPage() {
     }
   };
 
-  const handleDelete = async (serverId: string, name: string) => {
-    if (!confirm(`Delete server "${name}"? This will remove the container. Data on disk will be preserved.`)) return;
+  const handleDelete = async (serverId: string) => {
     try {
       await sendDeleteRequest(`/api/servers/${serverId}`);
       toast.success("Server deleted");
@@ -135,7 +136,7 @@ export default function ServerListPage() {
                     <Play className="h-4 w-4" />
                   </Button>
                 )}
-                <Button variant="outline" size="icon" className="text-destructive" onClick={() => handleDelete(server.id, server.name)}>
+                <Button variant="outline" size="icon" className="text-destructive" onClick={() => setDeleteTarget(server)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -144,6 +145,16 @@ export default function ServerListPage() {
         </div>
       )}
     </div>
+    <ConfirmDialog
+      open={!!deleteTarget}
+      onOpenChange={(v) => !v && setDeleteTarget(null)}
+      title="Delete Server"
+      description={`This will remove the container for "${deleteTarget?.name}". Data on disk will be preserved.`}
+      confirmText="Delete"
+      destructive
+      confirmInput={deleteTarget?.name}
+      onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget.id); }}
+    />
     </div>
   );
 }

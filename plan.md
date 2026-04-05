@@ -126,6 +126,50 @@
 
 ---
 
+## 2.1. Разграничение функционала: Панель vs Плагин
+
+Панель (Next.js) и плагин (Java) работают в связке. Панель управляет серверами через Docker API и RCON, а плагин даёт доступ к тому, что невозможно получить извне.
+
+### Что делает панель (Next.js + Docker + RCON)
+
+| Функция | Механизм |
+|---------|----------|
+| Создание/удаление серверов | Docker API (`dockerode`) |
+| Start / Stop / Restart | Docker API |
+| Мониторинг CPU/RAM контейнера | Docker Stats API |
+| Логи из файлов (`logs/*.log.gz`) | Чтение файлов с хоста |
+| Управление плагинами (upload/toggle/delete) | Файловая система `plugins/` |
+| Сохранения (worlds) | Файловая система |
+| `server.properties` и конфиги | Чтение/запись файлов |
+| Whitelist, ban/kick/op | RCON команды |
+| TPS/MSPT (fallback) | RCON (`/tps`, `/mspt`) |
+| Scheduled Tasks (cron) | `node-cron` в Next.js |
+| Аутентификация пользователей | JWT + Prisma |
+
+### Что делает плагин (Java, headless endpoints)
+
+| Эндпоинт | Что даёт | Почему нельзя без плагина |
+|-----------|----------|--------------------------|
+| `GET /api/gamerules` | Все gamerules + batch update | RCON — по одному, без атомарности |
+| `GET /api/info` | Favicon, MOTD, uptime, MSPT, системная инфа (CPU/GPU/RAM через OSHI) | RCON не имеет доступа к ОС |
+| `GET /api/monitor` | CPU%, RAM%, TPS с детекцией пауз | Хукается в game tick напрямую |
+| `GET /api/version` | Тип и версия сервера | Нет аналога через RCON |
+| `WS /socket/players` | Реалтайм join/leave/gamemode, ping, IP, ban reason | Bukkit event listener, не поллинг |
+| `WS /socket/inventory/{uuid}` | Просмотр и редактирование инвентаря с NBT | Только через Bukkit API |
+| `WS /socket/terminal` | Стрим логов + команды + автокомплит | RCON не стримит; автокомплит только в Bukkit |
+
+### Режим без плагина (degraded mode)
+
+Панель работает и без плагина, но с ограничениями:
+- TPS/MSPT — через RCON fallback (менее точный)
+- Логи — только из файлов (не реалтайм)
+- Нет автокомплита команд
+- Нет инвентаря игроков
+- Нет системных метрик (CPU/GPU)
+- Gamerules — по одному через RCON
+
+---
+
 ## 3. План доработок (Stage 3–4 и далее)
 
 Этот раздел — ориентир для следующей модели. Пункты можно выполнять по очереди, помечая как `done` по мере выполнения.
@@ -134,16 +178,11 @@
 
 **Цель:** избавиться от дублирования между старым Java‑web (внутри плагина) и новой Next.js‑панелью, оставить в плагине только то, что действительно нужно для глубокой интеграции с сервером.
 
-- **3.1.1. Выпилить legacy‑web из Java‑плагина**
-  - [ ] Проанализировать в `plugin/core` и связанных модулях:
-    - Контроллеры `controller/api/*`, Javalin routes, старые HTML/JS ресурсы.
-  - [ ] Убедиться, что всё, что сейчас делает панель (`/panel/...`, `/api/...` в Next.js), не требует HTTP‑эндпоинтов из плагина.
-  - [ ] Пометить и затем удалить/задепрекейтить:
-    - Старый HTTP‑сервер плагина (если ещё активен).
-    - Старые REST/WS‑эндпоинты, которые полностью переехали в панель.
-  - [ ] Оставить в плагине только:
-    - API для получения TPS/MSPT, инвентарей, NBT, ивентов.
-    - WebSocket/endpoint для push‑событий (если ещё нужен для терминала/инвентаря).
+- **3.1.1. Выпилить legacy‑web из Java‑плагина** ✅
+  - [x] Удалены 13 legacy API контроллеров (`Assets`, `Auth`, `BannedIps`, `Control`, `Download`, `Icon`, `Logs`, `Players`, `Plugins`, `Saves`, `Security`, `Tasks`, `Whitelist`).
+  - [x] Удалены `BeforeController` (legacy auth middleware) и `ErrorController` (legacy 404 handler).
+  - [x] Почищены импорты в `WebServer.java` (явные вместо wildcard `.*`).
+  - [x] Оставлены headless‑эндпоинты: `Gamerules`, `Info`, `Monitor`, `Version` контроллеры + WS endpoints (`Players`, `Inventory`, `Terminal`) + `JwtManager` (WS auth).
 
 - **3.1.2. Упорядочить Java‑модули**
   - [ ] Проверить, какие модули реально нужны для первой версии standalone‑панели (например, только текущие версии Fabric/Forge/Spigot, без старых).
@@ -151,30 +190,41 @@
     - Явного помечания legacy‑модулей (названием/комментарием).
     - Или их полного удаления/выноса в отдельную ветку, если они не будут поддерживаться.
 
-- **3.1.3. Удалить/почистить неиспользуемый frontend‑код**
-  - [ ] Найти старые страницы `app/panel/...` без `[serverId]` (если ещё остались) и удалить их.
-  - [ ] Убедиться, что старый API‑клиент (если остался из Java‑версии) не используется.
-  - [ ] Удалить/упростить любые временные заглушки, использованные при миграции.
+- **3.1.3. Удалить/почистить неиспользуемый frontend‑код** ✅
+  - [x] Удалены все старые страницы `app/panel/{dashboard,bukkit-config,code-of-conduct,gamerules,logs,players,plugins,saves,settings,tasks,terminal}/` (без `[serverId]`).
+  - [x] Удалён legacy API‑клиент `lib/api.ts` (axios‑based, с cookie auth на плагин).
+  - [x] Удалён legacy WebSocket‑клиент `lib/ws/` (подключался к WS‑серверу плагина напрямую).
+  - [x] Удалены неиспользуемые `hooks/use-websocket.ts`, `components/terminal-connector.tsx`, `lib/gamerules/presets-old.ts`.
+  - [x] Исправлены сломанные импорты в `lib/settings.ts` (`ConfigFile`, `ConsoleLogLevel` → `string`).
+  - [x] Исправлен duplicate import в `provision/route.ts`. Билд проходит успешно.
 
 ### 3.2. Stage 4 – Дизайн и UX
 
 **Цель:** привести визуальную часть к единому стилю Liquid Glass, заменить разрозненные UI‑паттерны на модальные диалоги, довести компонентную базу shadcn до полноты.
 
-- **3.2.1. Дизайн‑система Liquid Glass**
-  - [ ] Определить CSS‑переменные / Tailwind‑токены для стиля:
-    - `backdrop-blur`, полупрозрачные фоны (`bg-white/10`, `bg-black/20`), мягкие тени, `border-white/20`.
-    - Переменные для светлой и тёмной темы.
-  - [ ] Обновить `app/globals.css` и shadcn‑токены под новый стиль.
-  - [ ] Пройтись по всем страницам `/panel/[serverId]/…` и применить токены:
-    - Карточки, сайдбар, хедер, таблицы, редактор.
+- **3.2.1. Дизайн‑система Liquid Glass** ✅
+  - [x] CSS-переменные: `--glass`, `--glass-hover`, `--glass-border`, `--glass-blur`, `--glass-blur-lg`, `--elevation-1/2/3`.
+  - [x] Обновлены `globals.css`, shadcn-токены, утилитарные классы `.glass`, `.glass-lg`, `.glass-hover`.
+  - [x] Обновлены компоненты: Card, Dialog, AlertDialog, Button, Input, Select, Sidebar, Navbar.
+  - [x] Добавлен background gradient в `layout.tsx`.
+  - [x] Подробности в `frontend/DESIGN.md`.
 
-- **3.2.2. Модальные диалоги**
-  - [ ] Аудит текущих inline‑форм и подтверждений — определить, что должно стать модалкой:
-    - Создание сервера, удаление сервера, импорт сервера, управление пользователями, создание бэкапа.
-  - [ ] Реализовать модалки через `@radix-ui/react-dialog` (уже в shadcn):
-    - Единый `<ConfirmDialog>` для деструктивных действий.
-    - Полноценные формы внутри `<Dialog>` с `react-hook-form` + zod‑валидацией.
-  - [ ] Унифицировать расположение кнопок `Save`, `Apply`, `Restart`, `Start/Stop` во всех диалогах.
+- **3.2.2. Модальные диалоги** ✅
+  - [x] Создан `components/confirm-dialog.tsx` — переиспользуемый ConfirmDialog с поддержкой:
+    - type-to-confirm input, destructive variant, loading state, Enter key.
+  - [x] Интегрирован в 5 страниц: server list, plugins, saves, logs, tasks.
+  - [x] Все `window.confirm()` заменены.
+
+- **3.2.3. Модульная система панелей (Dashboard)** ✅
+  - [x] Установлен `react-grid-layout` v2.2.3.
+  - [x] Создан `hooks/use-panel-layout.ts` — persistence в localStorage, default layouts для lg/md/sm.
+  - [x] Создан `components/panels/panel-grid.tsx` — ResponsiveGridLayout wrapper с drag/resize.
+  - [x] Создан `components/panels/panel-wrapper.tsx` — chrome для каждой панели (drag handle, remove).
+  - [x] Создан `components/panels/panel-picker.tsx` — диалог добавления панелей.
+  - [x] Извлечены 7 отдельных панелей: server-info, uptime, players, cpu-ram, console, tps, system-stats.
+  - [x] Dashboard переписан на модульную систему.
+  - [x] Добавлена кнопка Reset Layout.
+  - [x] CSS стили для drag placeholder и resize handle.
 
 ### 3.3. Stage 5 – Auth и роли
 

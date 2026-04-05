@@ -16,7 +16,7 @@ export function Navbar({ className, serverId, ...props }: React.ComponentProps<"
 
   return (
     <nav
-      className={cn("min-h-12 bg-background border-b border-b-sidebar-border flex items-center justify-end *:cursor-pointer", className)}
+      className={cn("min-h-12 bg-glass/80 backdrop-blur-md border-b border-b-glass-border flex items-center justify-end *:cursor-pointer", className)}
       {...props}>
       {serverId && <SidebarTrigger className="mr-auto hidden max-md:flex cursor-pointer"/>}
       <div className="space-x-2 mr-2 max-sm:mr-0 max-sm:space-x-0">

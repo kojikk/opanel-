@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
 
-const SERVER_TYPES = ["PAPER", "SPIGOT", "FABRIC", "FORGE", "VANILLA"];
+const SERVER_TYPES = ["PAPER", "SPIGOT", "FABRIC", "FORGE", "NEOFORGE", "FOLIA", "VANILLA"];
 const MC_VERSIONS = [
+  "1.21.11", "1.21.9", "1.21.8", "1.21.5",
   "1.21.4", "1.21.3", "1.21.2", "1.21.1", "1.21",
   "1.20.6", "1.20.5", "1.20.4", "1.20.3", "1.20.2", "1.20.1", "1.20",
   "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19",
@@ -25,7 +26,7 @@ export default function CreateServerPage() {
 
   const [name, setName] = useState("");
   const [type, setType] = useState("PAPER");
-  const [mcVersion, setMcVersion] = useState("1.21.4");
+  const [mcVersion, setMcVersion] = useState("1.21.11");
   const [memory, setMemory] = useState("2G");
   const [gamePort, setGamePort] = useState(25565);
   const [rconPort, setRconPort] = useState(25575);

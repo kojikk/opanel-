@@ -18,6 +18,7 @@ export function SubPage({
   description,
   category,
   icon,
+  actions,
   outerClassName,
   pageClassName,
   className,
@@ -30,6 +31,7 @@ export function SubPage({
   description?: string
   category?: string
   icon?: React.ReactNode
+  actions?: React.ReactNode
   outerClassName?: string
   pageClassName?: string
   className?: string
@@ -40,7 +42,7 @@ export function SubPage({
   }, [title, subTitle]);
 
   return (
-    <div className={cn("group bg-sidebar flex-1 flex flex-col overflow-hidden", !hideNavbar && "max-h-screen", outerClassName)}>
+    <div className={cn("group bg-transparent flex-1 flex flex-col overflow-hidden", !hideNavbar && "max-h-screen", outerClassName)}>
       {!hideNavbar && <Navbar className="px-8 max-sm:px-2"/>}
       <div className={cn("flex-1 p-8 flex flex-col gap-4 overflow-y-auto", !description && "gap-8", pageClassName)}>
         <div className="space-y-4">
@@ -61,7 +63,8 @@ export function SubPage({
           )}
           <div className="flex items-center gap-5">
             {icon}
-            <h1 className="text-3xl font-bold">{subTitle ?? title}</h1>
+            <h1 className="text-3xl font-bold flex-1">{subTitle ?? title}</h1>
+            {actions}
           </div>
           {description && <span className="text-muted-foreground">{description}</span>}
         </div>

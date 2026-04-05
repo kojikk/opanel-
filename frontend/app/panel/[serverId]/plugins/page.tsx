@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { $ } from "@/lib/i18n";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 interface PluginInfo {
@@ -52,6 +53,7 @@ export default function PluginsPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PluginInfo | null>(null);
 
   const fetchPlugins = async () => {
     try {
@@ -108,7 +110,6 @@ export default function PluginsPage() {
   };
 
   const handleDelete = async (plugin: PluginInfo) => {
-    if (!confirm(`Delete plugin "${plugin.name}"?`)) return;
     try {
       await api.plugins.remove(plugin.fileName);
       toast.success("Plugin deleted");
@@ -183,7 +184,7 @@ export default function PluginsPage() {
                 <Button variant="ghost" size="icon" onClick={() => handleToggle(plugin)}>
                   {plugin.enabled ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(plugin)}>
+                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteTarget(plugin)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -249,6 +250,16 @@ export default function PluginsPage() {
           <PluginTable list={filtered(disabled)} />
         </TabsContent>
       </Tabs>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Delete Plugin"
+        description={`Are you sure you want to delete "${deleteTarget?.name}"? This cannot be undone.`}
+        confirmText="Delete"
+        destructive
+        onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget); }}
+      />
     </SubPage>
   );
 }
