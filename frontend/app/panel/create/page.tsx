@@ -5,12 +5,21 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { sendPostRequest } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
 
 const SERVER_TYPES = ["PAPER", "SPIGOT", "FABRIC", "FORGE", "NEOFORGE", "FOLIA", "VANILLA"];
 const MC_VERSIONS = [
-  "1.21.11", "1.21.9", "1.21.8", "1.21.5",
+  "26.1",
+  "1.21.11", "1.21.10", "1.21.9", "1.21.8", "1.21.7", "1.21.6", "1.21.5",
   "1.21.4", "1.21.3", "1.21.2", "1.21.1", "1.21",
   "1.20.6", "1.20.5", "1.20.4", "1.20.3", "1.20.2", "1.20.1", "1.20",
   "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19",
@@ -26,7 +35,7 @@ export default function CreateServerPage() {
 
   const [name, setName] = useState("");
   const [type, setType] = useState("PAPER");
-  const [mcVersion, setMcVersion] = useState("1.21.11");
+  const [mcVersion, setMcVersion] = useState("26.1");
   const [memory, setMemory] = useState("2G");
   const [gamePort, setGamePort] = useState(25565);
   const [rconPort, setRconPort] = useState(25575);
@@ -68,74 +77,74 @@ export default function CreateServerPage() {
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium mb-2">Server Name</label>
-          <input
+          <Input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="My Server"
-            className="w-full border rounded-md px-3 py-2 bg-background"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Server Type</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full border rounded-md px-3 py-2 bg-background"
-            >
-              {SERVER_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SERVER_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">Minecraft Version</label>
-            <select
-              value={mcVersion}
-              onChange={(e) => setMcVersion(e.target.value)}
-              className="w-full border rounded-md px-3 py-2 bg-background"
-            >
-              {MC_VERSIONS.map((v) => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
+            <Select value={mcVersion} onValueChange={setMcVersion}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MC_VERSIONS.map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2">Memory</label>
-          <select
-            value={memory}
-            onChange={(e) => setMemory(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 bg-background"
-          >
-            {MEMORY_OPTIONS.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+          <Select value={memory} onValueChange={setMemory}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MEMORY_OPTIONS.map((m) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Game Port</label>
-            <input
+            <Input
               type="number"
               value={gamePort}
               onChange={(e) => setGamePort(parseInt(e.target.value))}
-              className="w-full border rounded-md px-3 py-2 bg-background"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">RCON Port</label>
-            <input
+            <Input
               type="number"
               value={rconPort}
               onChange={(e) => setRconPort(parseInt(e.target.value))}
-              className="w-full border rounded-md px-3 py-2 bg-background"
             />
           </div>
         </div>

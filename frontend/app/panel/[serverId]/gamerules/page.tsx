@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { PencilRuler, Search, Loader2, Save } from "lucide-react";
+import { PencilRuler, Search, Loader2, Save, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { serverApi } from "@/lib/api-client";
 import { SubPage } from "../../sub-page";
@@ -20,13 +20,17 @@ export default function GamerulesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetch = async () => {
       try {
         const res = (await api.gamerules.get()) as Record<string, string>;
         setRules(res);
-      } catch {
-        toast.error("Failed to load gamerules");
+      } catch (e: any) {
+        const msg = e.response?.data?.error || "Failed to load gamerules";
+        setError(msg);
+        toast.error(msg);
       } finally {
         setLoading(false);
       }
@@ -91,6 +95,25 @@ export default function GamerulesPage() {
       <div className="flex items-center justify-center h-full">
         <Loader2 className="animate-spin h-8 w-8 text-muted-foreground" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <SubPage
+        title="Game Rules"
+        category={$("sidebar.management")}
+        icon={<PencilRuler />}
+        hideNavbar
+        className="flex-1 min-h-0 flex flex-col gap-4">
+        <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+          <AlertTriangle className="h-10 w-10 text-amber-500" />
+          <p className="text-sm">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => { setError(null); setLoading(true); window.location.reload(); }}>
+            Retry
+          </Button>
+        </div>
+      </SubPage>
     );
   }
 

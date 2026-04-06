@@ -1,0 +1,7 @@
+/* Override react-grid-layout's red placeholder */
+.react-grid-item.react-grid-placeholder {
+  background: hsl(var(--muted)) !important;
+  border: 2px dashed hsl(var(--border)) !important;
+  border-radius: var(--radius-xl) !important;
+  opacity: 0.5 !important;
+}

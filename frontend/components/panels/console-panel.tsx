@@ -1,21 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import AnsiToHtml from "ansi-to-html";
+import { formatConsoleLine } from "@/lib/formatting-codes/console";
 import { serverApi } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-
-const ansiConverter = new AnsiToHtml({ fg: "#aaa", bg: "transparent" });
 
 export function ConsolePanel() {
   const { serverId } = useParams<{ serverId: string }>();
   const api = serverApi(serverId);
   const [logs, setLogs] = useState<string[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
   const [command, setCommand] = useState("");
+
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    isAtBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
+  }, []);
 
   useEffect(() => {
     const eventSource = new EventSource(`/api/servers/${serverId}/terminal`);
@@ -32,7 +38,9 @@ export function ConsolePanel() {
   }, [serverId]);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isAtBottomRef.current) {
+      logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [logs]);
 
   const send = async () => {
@@ -55,9 +63,9 @@ export function ConsolePanel() {
           </Link>
         </Button>
       </div>
-      <div className="flex-1 overflow-auto bg-black text-white font-mono text-xs rounded-sm p-2 min-h-0">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-auto bg-black text-white font-mono text-xs rounded-sm p-2 min-h-0">
         {logs.map((line, i) => (
-          <div key={i} dangerouslySetInnerHTML={{ __html: ansiConverter.toHtml(line) }} />
+          <div key={i} dangerouslySetInnerHTML={{ __html: formatConsoleLine(line) }} />
         ))}
         <div ref={logsEndRef} />
       </div>

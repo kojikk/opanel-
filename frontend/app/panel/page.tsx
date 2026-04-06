@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Server, Play, Square, Trash2, Loader2 } from "lucide-react";
+import { Plus, Server, Play, Square, Trash2, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { sendGetRequest, sendPatchRequest, sendDeleteRequest } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
@@ -64,13 +64,29 @@ export default function ServerListPage() {
     }
   };
 
+  const handleRecreate = async (serverId: string) => {
+    try {
+      await sendPatchRequest(`/api/servers/${serverId}`, { action: "recreate" });
+      toast.success("Container recreated, server starting...");
+      fetchServers();
+    } catch {
+      toast.error("Failed to recreate container");
+    }
+  };
+
   const statusColor = (status: string) => {
     switch (status) {
       case "running": return "text-green-500";
       case "exited": return "text-red-500";
       case "created": return "text-yellow-500";
+      case "container_missing": return "text-amber-500";
       default: return "text-muted-foreground";
     }
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === "container_missing") return "container missing";
+    return status;
   };
 
   if (loading) {
@@ -111,8 +127,12 @@ export default function ServerListPage() {
           {servers.map((server) => (
             <div
               key={server.id}
-              className="border rounded-lg p-4 flex items-center justify-between hover:bg-accent/50 transition-colors cursor-pointer"
-              onClick={() => router.push(`/panel/${server.id}/dashboard`)}
+              className={`border rounded-lg p-4 flex items-center justify-between transition-colors ${
+                server.status === "container_missing"
+                  ? "border-amber-500/30 bg-amber-500/5"
+                  : "hover:bg-accent/50 cursor-pointer"
+              }`}
+              onClick={() => server.status !== "container_missing" && router.push(`/panel/${server.id}/dashboard`)}
             >
               <div className="flex items-center gap-4">
                 <Server className="h-10 w-10 text-muted-foreground" />
@@ -125,9 +145,14 @@ export default function ServerListPage() {
               </div>
               <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                 <span className={`text-sm font-medium capitalize ${statusColor(server.status)}`}>
-                  {server.status}
+                  {server.status === "container_missing" && <AlertTriangle className="inline w-4 h-4 mr-1 -mt-0.5" />}
+                  {statusLabel(server.status)}
                 </span>
-                {server.status === "running" ? (
+                {server.status === "container_missing" ? (
+                  <Button variant="outline" size="sm" onClick={() => handleRecreate(server.id)}>
+                    <RefreshCw className="h-4 w-4 mr-1" /> Recreate
+                  </Button>
+                ) : server.status === "running" ? (
                   <Button variant="outline" size="icon" onClick={() => handleAction(server.id, "stop")}>
                     <Square className="h-4 w-4" />
                   </Button>

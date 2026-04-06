@@ -217,12 +217,7 @@
     opacity: 0.9;
     transition: none !important;
   }
-  .react-grid-item.react-grid-placeholder {
-    background: var(--glass-hover);
-    border: 2px dashed var(--glass-border);
-    border-radius: var(--radius-xl);
-    opacity: 0.4;
-  }
+  /* placeholder styles moved to components/panels/panel-grid.css (loaded after library CSS) */
   .react-grid-item > .react-resizable-handle {
     opacity: 0;
     transition: opacity 0.2s;

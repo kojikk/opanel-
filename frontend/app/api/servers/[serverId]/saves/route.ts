@@ -1,17 +1,19 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requirePermission, P } from "@/lib/auth";
 import { listServerDirectory, deleteServerFile, fileExists } from "@/lib/file-manager";
 import { prisma } from "@/lib/db/client";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.SAVES_VIEW);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server) {
     return NextResponse.json({ error: "Server not found" }, { status: 404 });
@@ -41,13 +43,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.SAVES_DELETE);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const { saveName } = await request.json();
 
   if (!saveName || saveName.includes("..")) {

@@ -1,16 +1,18 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requirePermission, P } from "@/lib/auth";
 import { listServerDirectory, readServerFileBuffer, writeServerFileBuffer, deleteServerFile } from "@/lib/file-manager";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.PLUGINS_VIEW);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const { searchParams } = new URL(request.url);
   const fileName = searchParams.get("download");
 
@@ -42,15 +44,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
-  try {
-    await requireAuth(request);
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { serverId } = await params;
   const { searchParams } = new URL(request.url);
   const action = searchParams.get("action");
+
+  try {
+    await requirePermission(request, serverId, action === "toggle" ? P.PLUGINS_TOGGLE : P.PLUGINS_UPLOAD);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   if (action === "toggle") {
     const { fileName, enabled } = await request.json();
@@ -82,13 +86,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.PLUGINS_DELETE);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const { fileName } = await request.json();
 
   try {

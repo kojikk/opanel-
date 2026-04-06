@@ -126,7 +126,7 @@ export async function getContainerStats(containerId: string): Promise<ContainerS
   const memLimit = stats.memory_stats.limit;
 
   return {
-    cpuPercent: Math.round(cpuPercent * 100) / 100,
+    cpuPercent: Math.round(Math.min(cpuPercent, 100) * 100) / 100,
     memoryUsageMB: Math.round(memUsage / 1024 / 1024),
     memoryLimitMB: Math.round(memLimit / 1024 / 1024),
     memoryPercent: Math.round((memUsage / memLimit) * 10000) / 100,

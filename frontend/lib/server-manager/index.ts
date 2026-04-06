@@ -50,7 +50,25 @@ function setProvisioning(serverId: string, step: ProvisioningStatus["step"], pro
 }
 
 function sanitizeName(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  return name.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+}
+
+/**
+ * Generate a human-readable server ID from the name.
+ * E.g. "My SMP Server" → "my-smp-server"
+ * If it already exists, appends -2, -3, etc.
+ */
+async function generateServerId(name: string): Promise<string> {
+  const base = sanitizeName(name) || "server";
+  let candidate = base;
+  let suffix = 1;
+
+  while (await prisma.server.findUnique({ where: { id: candidate } })) {
+    suffix++;
+    candidate = `${base}-${suffix}`;
+  }
+
+  return candidate;
 }
 
 /**
@@ -96,7 +114,7 @@ function findBestModule(serverType: string, mcVersion: string): { module: string
     const candidates: { dir: string; version: number[] }[] = [];
 
     for (const d of dirs) {
-      if (d.isDirectory() && d.name.startsWith(prefix) && d.name !== `${config.module}-helper`) {
+      if (d.isDirectory() && d.name.startsWith(prefix) && !d.name.includes("-helper")) {
         const ver = parseVer(d.name.slice(prefix.length));
         if (compareVer(ver, serverVer) <= 0) {
           candidates.push({ dir: d.name, version: ver });
@@ -255,7 +273,8 @@ export async function createServer(opts: {
 
   const rconPassword = crypto.randomBytes(16).toString("hex");
   const pluginPort = opts.pluginPort || 3000 + Math.floor(Math.random() * 1000);
-  const dataPath = path.resolve(SERVERS_BASE_PATH, sanitizeName(opts.name));
+  const serverId = await generateServerId(opts.name);
+  const dataPath = path.resolve(SERVERS_BASE_PATH, serverId);
   const javaVersion = opts.javaVersion || "21";
 
   fs.mkdirSync(dataPath, { recursive: true });
@@ -263,11 +282,12 @@ export async function createServer(opts: {
   // Create DB record immediately (no containerId yet)
   const server = await prisma.server.create({
     data: {
+      id: serverId,
       name: opts.name,
       description: opts.description,
       type: opts.type,
       mcVersion: opts.mcVersion,
-      containerName: `opanel-mc-${sanitizeName(opts.name)}`,
+      containerName: `opanel-mc-${serverId}`,
       rconPort: opts.rconPort,
       rconPassword,
       gamePort: opts.gamePort,
@@ -348,20 +368,51 @@ async function provisionServerAsync(
 
 export async function listServers(): Promise<ServerInfo[]> {
   const servers = await prisma.server.findMany({ orderBy: { createdAt: "desc" } });
-  return Promise.all(
-    servers.map(async (s) =>
-      toServerInfo(s, s.containerId ? await getContainerStatus(s.containerId) : "unknown")
-    )
-  );
+  const result: ServerInfo[] = [];
+
+  for (const s of servers) {
+    const status = s.containerId ? await getContainerStatus(s.containerId) : "unknown";
+    const containerMissing = s.containerId && status === "unknown";
+    const dataMissing = !fs.existsSync(s.dataPath);
+
+    // Auto-cleanup: container gone AND data folder gone → remove from DB
+    if (containerMissing && dataMissing) {
+      await prisma.server.delete({ where: { id: s.id } }).catch(() => {});
+      continue;
+    }
+
+    // Container deleted but data folder exists → recoverable
+    if (containerMissing && !dataMissing) {
+      result.push(toServerInfo(s, "container_missing"));
+      continue;
+    }
+
+    result.push(toServerInfo(s, status));
+  }
+
+  return result;
 }
 
 export async function getServer(serverId: string) {
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server) return null;
-  return {
-    ...server,
-    status: server.containerId ? await getContainerStatus(server.containerId) : "unknown",
-  };
+
+  const status = server.containerId ? await getContainerStatus(server.containerId) : "unknown";
+  const containerMissing = server.containerId && status === "unknown";
+  const dataMissing = !fs.existsSync(server.dataPath);
+
+  // Auto-cleanup: container gone AND data folder gone → remove from DB
+  if (containerMissing && dataMissing) {
+    await prisma.server.delete({ where: { id: server.id } }).catch(() => {});
+    return null;
+  }
+
+  // Container deleted but data folder exists → recoverable
+  if (containerMissing && !dataMissing) {
+    return { ...server, status: "container_missing" };
+  }
+
+  return { ...server, status };
 }
 
 export async function startServer(serverId: string): Promise<void> {
@@ -382,11 +433,56 @@ export async function restartServer(serverId: string): Promise<void> {
   await restartContainer(server.containerId);
 }
 
+/**
+ * Recreate a Docker container for a server whose container was manually deleted.
+ * Reuses all existing settings and the data folder.
+ */
+export async function recreateServer(serverId: string): Promise<void> {
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server) throw new Error("Server not found");
+
+  if (!fs.existsSync(server.dataPath)) {
+    throw new Error("Server data folder not found — cannot recreate");
+  }
+
+  if (!(await isDockerAvailable())) {
+    throw new Error("Docker is not available. Make sure Docker is running.");
+  }
+
+  setProvisioning(serverId, "pulling", 20, "Pulling Docker image...");
+  await pullImage();
+
+  setProvisioning(serverId, "creating", 55, "Recreating container...");
+  const containerId = await createServerContainer({
+    name: server.name,
+    type: server.type,
+    mcVersion: server.mcVersion,
+    memory: server.memory,
+    gamePort: server.gamePort,
+    rconPort: server.rconPort,
+    rconPassword: server.rconPassword,
+    pluginPort: server.pluginPort,
+    dataPath: server.dataPath,
+    javaVersion: server.javaVersion,
+  });
+
+  await prisma.server.update({
+    where: { id: serverId },
+    data: { containerId },
+  });
+
+  setProvisioning(serverId, "starting", 80, "Starting server...");
+  await startContainer(containerId);
+
+  setProvisioning(serverId, "ready", 100, "Server is ready!");
+}
+
 export async function deleteServer(serverId: string): Promise<void> {
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server) throw new Error("Server not found");
   if (server.containerId) {
-    await removeContainer(server.containerId);
+    // Container may already be gone — don't fail
+    await removeContainer(server.containerId).catch(() => {});
   }
   await prisma.server.delete({ where: { id: serverId } });
 }

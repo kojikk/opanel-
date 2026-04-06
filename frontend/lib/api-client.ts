@@ -52,21 +52,22 @@ export async function uploadFile(route: string, file: File, onProgress?: (progre
   })).data;
 }
 
-export async function checkAuth(): Promise<boolean> {
+export async function checkAuth(): Promise<{ id: string; username: string; role: string } | null> {
   try {
-    await sendPostRequest("/api/auth", { action: "check" });
-    return true;
+    return await sendPostRequest("/api/auth", { action: "check" });
   } catch {
-    return false;
+    return null;
   }
 }
 
 export async function login(username: string, password: string) {
-  return sendPostRequest("/api/auth", { action: "login", username, password });
+  return sendPostRequest<{ id: string; username: string; role: string }>("/api/auth", { action: "login", username, password });
 }
 
-export async function register(username: string, password: string) {
-  return sendPostRequest("/api/auth", { action: "register", username, password });
+export async function register(username: string, password: string, confirmPassword: string) {
+  return sendPostRequest<{ id: string; username: string; role: string }>("/api/auth", {
+    action: "register", username, password, confirmPassword,
+  });
 }
 
 export async function logout(): Promise<boolean> {

@@ -20,6 +20,9 @@ interface CpuRamPanelProps {
 
 export function CpuRamPanel({ history }: CpuRamPanelProps) {
   const latest = history[history.length - 1];
+  const maxMemory = Math.max(...history.map((d) => d.memory), 1);
+  const memCeil = Math.ceil(maxMemory / 256) * 256; // round up to nearest 256 MB
+
   const data = history.map((d, i) => ({ idx: i, cpu: d.cpu, memory: d.memory }));
 
   return (
@@ -31,7 +34,12 @@ export function CpuRamPanel({ history }: CpuRamPanelProps) {
         <ChartContainer config={chartConfig} className="w-full h-full">
           <AreaChart data={data} margin={{ left: 0, right: 0, top: 4, bottom: 4 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
+            {/* Left axis: CPU 0–100% */}
+            <YAxis yAxisId="cpu" hide domain={[0, 100]} />
+            {/* Right axis: RAM 0–memCeil MB */}
+            <YAxis yAxisId="memory" hide domain={[0, memCeil]} orientation="right" />
             <Area
+              yAxisId="memory"
               dataKey="memory"
               type="monotone"
               fill="url(#fillMemory)"
@@ -40,6 +48,7 @@ export function CpuRamPanel({ history }: CpuRamPanelProps) {
               isAnimationActive={false}
             />
             <Area
+              yAxisId="cpu"
               dataKey="cpu"
               type="monotone"
               fill="url(#fillCpu)"
@@ -47,7 +56,6 @@ export function CpuRamPanel({ history }: CpuRamPanelProps) {
               strokeWidth={2}
               isAnimationActive={false}
             />
-            <YAxis hide domain={[0, 100]} />
             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel indicator="line" />} />
             <defs>
               <linearGradient id="fillMemory" x1="0" y1="0" x2="0" y2="1">

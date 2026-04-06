@@ -4,6 +4,7 @@ import { useMemo, useCallback } from "react";
 import { ResponsiveGridLayout, useContainerWidth, verticalCompactor, type ResponsiveLayouts, type Layout } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
+import "./panel-grid.css";
 import {
   Server,
   Clock,
