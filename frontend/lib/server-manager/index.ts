@@ -381,6 +381,12 @@ export async function listServers(): Promise<ServerInfo[]> {
       continue;
     }
 
+    // Container deleted but data folder exists → recoverable
+    if (containerMissing && !dataMissing) {
+      result.push(toServerInfo(s, "container_missing"));
+      continue;
+    }
+
     result.push(toServerInfo(s, status));
   }
 
@@ -399,6 +405,11 @@ export async function getServer(serverId: string) {
   if (containerMissing && dataMissing) {
     await prisma.server.delete({ where: { id: server.id } }).catch(() => {});
     return null;
+  }
+
+  // Container deleted but data folder exists → recoverable
+  if (containerMissing && !dataMissing) {
+    return { ...server, status: "container_missing" };
   }
 
   return { ...server, status };
@@ -420,6 +431,50 @@ export async function restartServer(serverId: string): Promise<void> {
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server?.containerId) throw new Error("Server not found");
   await restartContainer(server.containerId);
+}
+
+/**
+ * Recreate a Docker container for a server whose container was manually deleted.
+ * Reuses all existing settings and the data folder.
+ */
+export async function recreateServer(serverId: string): Promise<void> {
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server) throw new Error("Server not found");
+
+  if (!fs.existsSync(server.dataPath)) {
+    throw new Error("Server data folder not found — cannot recreate");
+  }
+
+  if (!(await isDockerAvailable())) {
+    throw new Error("Docker is not available. Make sure Docker is running.");
+  }
+
+  setProvisioning(serverId, "pulling", 20, "Pulling Docker image...");
+  await pullImage();
+
+  setProvisioning(serverId, "creating", 55, "Recreating container...");
+  const containerId = await createServerContainer({
+    name: server.name,
+    type: server.type,
+    mcVersion: server.mcVersion,
+    memory: server.memory,
+    gamePort: server.gamePort,
+    rconPort: server.rconPort,
+    rconPassword: server.rconPassword,
+    pluginPort: server.pluginPort,
+    dataPath: server.dataPath,
+    javaVersion: server.javaVersion,
+  });
+
+  await prisma.server.update({
+    where: { id: serverId },
+    data: { containerId },
+  });
+
+  setProvisioning(serverId, "starting", 80, "Starting server...");
+  await startContainer(containerId);
+
+  setProvisioning(serverId, "ready", 100, "Server is ready!");
 }
 
 export async function deleteServer(serverId: string): Promise<void> {
