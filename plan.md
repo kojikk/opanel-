@@ -224,30 +224,40 @@
   - [x] Добавлена кнопка Reset Layout.
   - [x] CSS стили для drag placeholder и resize handle.
 
-### 3.3. Stage 5 – Auth и роли
+### 3.3. Stage 5 – Auth и роли ✅
 
-**Цель:** заменить текущую простую JWT‑auth на OAuth 2.0 и добавить полноценную систему ролей.
+**Цель:** credentials-auth с JWT, система ролей OWNER/ADMIN/USER и гранулярные per-server permissions.
 
-- **3.3.1. OAuth 2.0 с JWT**
-  - [ ] Выбрать провайдеров (Discord, GitHub — наиболее уместны для аудитории).
-  - [ ] Интегрировать через **NextAuth.js v5** (Auth.js) поверх существующего `jose`‑слоя:
-    - Провайдеры: Discord, GitHub + credentials (email/password как fallback).
-    - Сессии: JWT‑стратегия, access token в cookie.
-  - [ ] Обновить Prisma‑схему:
-    - Добавить модели `Account`, `Session` (стандарт Auth.js).
-  - [ ] Убрать текущие ручные `bcryptjs`‑роуты `/api/auth/*`, заменить на Auth.js handlers.
-  - [ ] UI:
-    - Страница логина: кнопки «Войти через Discord / GitHub» + форма email/пароль.
+- **3.3.1. Auth с JWT и сессиями** ✅
+  - [x] Credentials-only auth (без OAuth) с двойным вводом пароля при регистрации.
+  - [x] Проверка сложности пароля (8+ символов, uppercase, lowercase, цифра, спецсимвол) + UI-индикатор.
+  - [x] Brute-force защита: rate limiter 5 попыток / 15 мин с lockout, привязан к IP+username.
+  - [x] JWT-сессии в cookie (HS256, 7 дней), sessionId в JWT payload.
+  - [x] Полная проверка в DB: существование сессии + её token + срок действия.
+  - [x] Revoke отдельной сессии / всех сессий пользователя из админки.
+  - [x] `middleware.ts`: edge-проверка JWT для всех маршрутов кроме `/login`, `/about`, `/api/auth`.
+  - [x] Первый зарегистрированный пользователь автоматически получает роль OWNER.
 
-- **3.3.2. Система ролей**
-  - [ ] Расширить Prisma‑модель:
-    - `UserRole` enum: `OWNER`, `ADMIN`, `MOD`, `VIEWER`.
-    - Таблица `ServerAccess` (`userId`, `serverId`, `role`) — доступ к конкретным серверам.
-  - [ ] JWT‑payload расширить: `role`, `serverId[]` (список доступных серверов).
-  - [ ] Middleware (`middleware.ts`) с проверкой ролей для `/panel/*` и `/api/servers/*`.
-  - [ ] UI:
-    - Страница управления пользователями (только для `OWNER`/`ADMIN`): список, изменение роли, привязка к серверам.
-    - Скрывать/блокировать деструктивные кнопки для `VIEWER` / `MOD`.
+- **3.3.2. Система ролей и permissions** ✅
+  - [x] Prisma: `GlobalRole` enum (`OWNER`, `ADMIN`, `USER`), поле `role` в `User`.
+  - [x] Prisma: `ServerAccess` (userId, serverId, permissions[]) — гранулярный доступ к серверам.
+  - [x] 30 гранулярных permissions по группам: Server, Console, Players (view/kick/ban/gamemode/op/inventory), Whitelist, Plugins, Saves, Logs, Tasks, Gamerules, Settings, Icon/MOTD, Monitor.
+  - [x] OWNER/ADMIN bypass все permission-проверки (полный доступ ко всем серверам).
+  - [x] USER без ServerAccess не видит серверов — admin назначает доступ поштучно.
+  - [x] Все 16 API-роутов серверов обновлены на `requirePermission(request, serverId, P.XXX)`.
+  - [x] Серверный список фильтруется по `getAccessibleServerIds()`.
+
+- **3.3.3. Админ-панель** ✅
+  - [x] Admin API: `/api/admin/users` (список), `/api/admin/users/[userId]` (роль, удаление), `/api/admin/users/[userId]/sessions` (список, revoke), `/api/admin/users/[userId]/access` (CRUD per-server permissions), `/api/admin/sessions` (все сессии).
+  - [x] UI `/admin`: вкладки Users / Sessions, смена роли, revoke сессий, удаление пользователей (type-to-confirm).
+  - [x] Диалог редактирования permissions: Switch для каждого permission, Toggle all по группе, Add/Remove server access.
+  - [x] Кнопка «Admin» в Navbar (видна только OWNER/ADMIN) через `UserContext`.
+
+- **3.3.4. Тесты** ✅
+  - [x] `auth-password.test.ts` — 7 тестов: все правила валидации пароля.
+  - [x] `auth-rate-limit.test.ts` — 5 тестов: лимит попыток, lockout, изоляция ключей, сброс.
+  - [x] `auth-permissions.test.ts` — 5 тестов: формат, полнота, уникальность, покрытие групп.
+  - [x] Все 67 тестов проходят (17 новых + 50 существующих).
 
 ### 3.4. Stage 6 – Функциональные фичи
 

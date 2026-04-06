@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCheckAuth } from "@/hooks/use-check-auth";
+import { UserContext, type UserContextData } from "@/contexts/user-context";
 
 export default function PanelLayout({
   children,
@@ -9,14 +10,21 @@ export default function PanelLayout({
   children: React.ReactNode;
 }>) {
   const [mounted, setMounted] = useState(false);
+  const [userData, setUserData] = useState<UserContextData | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useCheckAuth();
+  useCheckAuth((user) => {
+    setUserData(user);
+  });
 
-  if (!mounted) return <></>;
+  if (!mounted || !userData) return <></>;
 
-  return <>{children}</>;
+  return (
+    <UserContext value={userData}>
+      {children}
+    </UserContext>
+  );
 }

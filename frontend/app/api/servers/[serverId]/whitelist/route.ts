@@ -1,17 +1,18 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requirePermission, P } from "@/lib/auth";
 import { executeCommand } from "@/lib/server-manager";
 import { readServerFile } from "@/lib/file-manager";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.WHITELIST_VIEW);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const { serverId } = await params;
 
   try {
     const content = await readServerFile(serverId, "whitelist.json");
@@ -22,13 +23,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.WHITELIST_MANAGE);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const body = await request.json();
   const { action, player } = body;
 

@@ -7,12 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum GlobalRole {
+  OWNER
+  ADMIN
+  USER
+}
+
 model User {
-  id        String    @id @default(cuid())
-  username  String    @unique
-  password  String
-  createdAt DateTime  @default(now())
-  sessions  Session[]
+  id            String         @id @default(cuid())
+  username      String         @unique
+  password      String
+  role          GlobalRole     @default(USER)
+  createdAt     DateTime       @default(now())
+  sessions      Session[]
+  serverAccess  ServerAccess[]
 }
 
 model Session {
@@ -20,29 +28,44 @@ model Session {
   token     String   @unique
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
 
+model ServerAccess {
+  id          String   @id @default(cuid())
+  userId      String
+  serverId    String
+  permissions String[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, serverId])
+}
+
 model Server {
-  id              String   @id @default(cuid())
+  id              String         @id @default(cuid())
   name            String
   description     String?
   type            String
   mcVersion       String
-  containerId     String?  @unique
-  containerName   String   @unique
+  containerId     String?        @unique
+  containerName   String         @unique
   rconPort        Int
   rconPassword    String
   gamePort        Int
-  pluginPort      Int      @default(3000)
-  memory          String   @default("2G")
-  javaVersion     String   @default("21")
+  pluginPort      Int            @default(3000)
+  memory          String         @default("2G")
+  javaVersion     String         @default("21")
   dataPath        String
-  autoStart       Boolean  @default(false)
-  pluginInstalled Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  autoStart       Boolean        @default(false)
+  pluginInstalled Boolean        @default(false)
+  createdAt       DateTime       @default(now())
   tasks           Task[]
+  access          ServerAccess[]
 }
 
 model Task {

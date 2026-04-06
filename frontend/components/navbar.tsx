@@ -1,14 +1,18 @@
-import Link from "next/link";
+"use client";
 
-import { BookText, Info, LogOut, Settings, SquareArrowOutUpRight } from "lucide-react";
+import Link from "next/link";
+import { BookText, Info, LogOut, Settings, Shield, SquareArrowOutUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SidebarTrigger } from "./ui/sidebar";
 import { $ } from "@/lib/i18n";
 import { logout } from "@/lib/api-client";
+import { useUser } from "@/contexts/user-context";
 
 export function Navbar({ className, serverId, ...props }: React.ComponentProps<"nav"> & { serverId?: string }) {
+  const user = useUser();
+
   const handleLogout = async () => {
     await logout();
     window.location.href = "/login";
@@ -39,6 +43,14 @@ export function Navbar({ className, serverId, ...props }: React.ComponentProps<"
           </Link>
         </Button>
       </div>
+      {(user?.role === "OWNER" || user?.role === "ADMIN") && (
+        <Button variant="ghost" asChild>
+          <Link href="/admin">
+            <Shield />
+            <span className="max-sm:hidden">Admin</span>
+          </Link>
+        </Button>
+      )}
       <Button variant="ghost" size="icon" onClick={() => handleLogout()}>
         <LogOut />
       </Button>

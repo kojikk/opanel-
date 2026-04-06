@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requirePermission, P } from "@/lib/auth";
 import { executeCommand } from "@/lib/server-manager";
 
 const KNOWN_GAMERULES = [
@@ -23,13 +23,15 @@ const KNOWN_GAMERULES = [
 ];
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.GAMERULES_VIEW);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   try {
     const results: Record<string, string> = {};
 
@@ -53,13 +55,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.GAMERULES_EDIT);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const body = await request.json();
 
   try {

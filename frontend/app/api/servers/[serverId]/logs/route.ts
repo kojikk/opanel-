@@ -1,16 +1,18 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requirePermission, P } from "@/lib/auth";
 import { listServerDirectory, readServerFile, deleteServerFile } from "@/lib/file-manager";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.LOGS_VIEW);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const { searchParams } = new URL(request.url);
   const fileName = searchParams.get("file");
 
@@ -32,13 +34,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
+  const { serverId } = await params;
   try {
-    await requireAuth(request);
-  } catch {
+    await requirePermission(request, serverId, P.LOGS_DELETE);
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (msg === "Forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { serverId } = await params;
   const { searchParams } = new URL(request.url);
   const fileName = searchParams.get("file");
 
