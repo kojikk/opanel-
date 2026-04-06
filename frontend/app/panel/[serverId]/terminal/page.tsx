@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import AnsiToHtml from "ansi-to-html";
 import { ArrowUp, Maximize, Minimize, SquareTerminal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { serverApi } from "@/lib/api-client";
@@ -19,8 +18,7 @@ import { SubPage } from "../../sub-page";
 import { cn } from "@/lib/utils";
 import { $ } from "@/lib/i18n";
 import { changeSettings, getSettings } from "@/lib/settings";
-
-const ansiConverter = new AnsiToHtml({ fg: "#ccc", bg: "transparent" });
+import { formatConsoleLine } from "@/lib/formatting-codes/console";
 
 type LogLevel = "ALL" | "INFO" | "WARN" | "ERROR";
 
@@ -149,7 +147,7 @@ export default function TerminalPage() {
         className="bg-background flex-4/5 max-lg:flex-3/4 max-md:flex-1 min-w-0 flex flex-col border rounded-sm">
         <div className="flex-1 overflow-auto bg-black text-white font-mono text-sm p-3">
           {filteredLogs.map((line, i) => (
-            <div key={i} dangerouslySetInnerHTML={{ __html: ansiConverter.toHtml(line) }} />
+            <div key={i} dangerouslySetInnerHTML={{ __html: formatConsoleLine(line) }} />
           ))}
           <div ref={logsEndRef} />
         </div>

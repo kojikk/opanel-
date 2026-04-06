@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requirePermission, P } from "@/lib/auth";
 import { executeCommand } from "@/lib/server-manager";
 
+/** Canonical gamerule names in camelCase (used as display keys) */
 const KNOWN_GAMERULES = [
   "announceAdvancements", "blockExplosionDropDecay", "commandBlockOutput",
   "commandModificationBlockLimit", "disableElytraMovementCheck", "disableRaids",
@@ -22,6 +23,43 @@ const KNOWN_GAMERULES = [
   "waterSourceConversion",
 ];
 
+/** Convert camelCase to snake_case */
+function toSnakeCase(s: string): string {
+  return s.replace(/[A-Z]/g, (ch) => "_" + ch.toLowerCase());
+}
+
+/** Extract the value from a gamerule query response */
+function parseGameruleValue(response: string): string | null {
+  // "Gamerule X is currently set to: VALUE"
+  let match = response.match(/is currently set to:\s*(.+)/i);
+  if (match) return match[1].trim();
+
+  // "has value: VALUE" or "is: VALUE"
+  match = response.match(/(?:has value|is)\s*:\s*(.+)/i);
+  if (match) return match[1].trim();
+
+  // "X = VALUE"
+  match = response.match(/=\s*(.+)/);
+  if (match) return match[1].trim();
+
+  // Plain value
+  const trimmed = response.trim();
+  if (/^(true|false|-?\d+)$/.test(trimmed)) return trimmed;
+
+  return null;
+}
+
+/** Detect whether this server uses snake_case or camelCase gamerule names */
+async function detectNamingFormat(serverId: string): Promise<"snake" | "camel"> {
+  // Test with keepInventory (exists in all MC versions with gamerules)
+  try {
+    const res = await executeCommand(serverId, "gamerule keep_inventory");
+    if (!res.includes("Incorrect") && !res.includes("Unknown")) return "snake";
+  } catch { /* ignore */ }
+
+  return "camel";
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
   const { serverId } = await params;
   try {
@@ -33,18 +71,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
+    // Test RCON connection first
+    try {
+      await executeCommand(serverId, "list");
+    } catch {
+      return NextResponse.json(
+        { error: "Cannot connect to server. Make sure the server is running." },
+        { status: 503 }
+      );
+    }
+
+    const format = await detectNamingFormat(serverId);
     const results: Record<string, string> = {};
 
     for (const rule of KNOWN_GAMERULES) {
+      const rconName = format === "snake" ? toSnakeCase(rule) : rule;
       try {
-        const response = await executeCommand(serverId, `gamerule ${rule}`);
-        const match = response.match(/(?:is currently set to|has value): (.+)/i)
-          || response.match(/: (.+)$/);
-        if (match) {
-          results[rule] = match[1].trim();
+        const response = await executeCommand(serverId, `gamerule ${rconName}`);
+        const value = parseGameruleValue(response);
+        if (value !== null) {
+          // Store with the RCON name (what the server actually uses)
+          results[rconName] = value;
         }
       } catch {
-        // Rule may not exist in this MC version
+        // Rule may not exist in this MC version — skip
       }
     }
 

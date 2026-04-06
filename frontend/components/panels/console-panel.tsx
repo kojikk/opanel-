@@ -4,11 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import AnsiToHtml from "ansi-to-html";
+import { formatConsoleLine } from "@/lib/formatting-codes/console";
 import { serverApi } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-
-const ansiConverter = new AnsiToHtml({ fg: "#aaa", bg: "transparent" });
 
 export function ConsolePanel() {
   const { serverId } = useParams<{ serverId: string }>();
@@ -67,7 +65,7 @@ export function ConsolePanel() {
       </div>
       <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-auto bg-black text-white font-mono text-xs rounded-sm p-2 min-h-0">
         {logs.map((line, i) => (
-          <div key={i} dangerouslySetInnerHTML={{ __html: ansiConverter.toHtml(line) }} />
+          <div key={i} dangerouslySetInnerHTML={{ __html: formatConsoleLine(line) }} />
         ))}
         <div ref={logsEndRef} />
       </div>
