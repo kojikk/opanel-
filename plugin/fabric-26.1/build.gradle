@@ -1,0 +1,111 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.15-SNAPSHOT'
+    id 'com.gradleup.shadow' version '8.3.8'
+}
+
+configurations {
+    shadowImplementation
+    implementation.extendsFrom(shadowImplementation)
+
+    configureEach {
+        resolutionStrategy {
+            force "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}+${minecraft_version}"
+        }
+    }
+}
+
+version = "${rootProject.version}"
+group = "${rootProject.group}"
+
+base {
+    archivesName = 'opanel'
+}
+
+loom {
+    splitEnvironmentSourceSets()
+
+    mods {
+        "opanel" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+}
+
+repositories {
+    maven {
+        url = uri("https://repo.codemc.io/repository/tetoe-mc")
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}+${minecraft_version}"
+    include(implementation("space.nocp:configx:2.0.3"))
+
+    shadowImplementation(project(":core")) {
+        // To avoid conflict
+        exclude group: 'com.github.oshi', module: 'oshi-core'
+    }
+    compileOnly(project(":fabric-helper-unmapped"))
+
+    implementation "com.github.oshi:oshi-core:6.8.2"
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowImplementation]
+
+    archiveBaseName.set(base.archivesName.map { it + "-build" })
+    archiveClassifier.set('')
+    destinationDirectory.set(file("../build/libs"))
+
+    relocate 'com.google.gson', 'net.opanel.deps.gson'
+    relocate 'org.objectweb.asm', 'net.opanel.deps.objectweb.asm'
+    relocate 'io.javalin', 'net.opanel.deps.javalin'
+    relocate 'kotlin', 'net.opanel.deps.kotlin'
+    relocate 'space.nocp.configx', 'net.opanel.deps.configx'
+
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
+
+shadowJar.from(project.files(
+    configurations.detachedConfiguration(
+        dependencies.create("space.nocp:configx:2.0.3")
+    ).files.findAll { it.name.contains('configx') && it.name.endsWith('.jar') }
+))
+
+build {
+    dependsOn shadowJar
+}
+
+tasks.named('compileJava', JavaCompile) {
+    source(project(":fabric-helper-unmapped").sourceSets.main.allSource)
+}
+
+tasks.named('processResources', ProcessResources) {
+    var replaceProperties = [
+            version: project.version,
+            minecraft_version: minecraft_version,
+            fabric_loader_version: fabric_loader_version
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching("fabric.mod.json") {
+        expand replaceProperties + [project: project]
+    }
+
+    from project(":fabric-helper-unmapped").sourceSets.main.resources
+}
+
+java {
+    withSourcesJar()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}

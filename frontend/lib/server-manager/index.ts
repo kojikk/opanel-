@@ -96,7 +96,7 @@ function findBestModule(serverType: string, mcVersion: string): { module: string
     const candidates: { dir: string; version: number[] }[] = [];
 
     for (const d of dirs) {
-      if (d.isDirectory() && d.name.startsWith(prefix) && d.name !== `${config.module}-helper`) {
+      if (d.isDirectory() && d.name.startsWith(prefix) && !d.name.includes("-helper")) {
         const ver = parseVer(d.name.slice(prefix.length));
         if (compareVer(ver, serverVer) <= 0) {
           candidates.push({ dir: d.name, version: ver });

@@ -1,0 +1,61 @@
+package net.opanel.fabric_helper_unmapped;
+
+import com.mojang.authlib.GameProfile;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.PlayerList;
+import net.opanel.common.OPanelPlayer;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+public abstract class BaseFabricPlayer implements OPanelPlayer {
+    protected final ServerPlayer player;
+    protected final MinecraftServer server;
+    protected final PlayerList playerManager;
+    protected final GameProfile profile;
+
+    public BaseFabricPlayer(ServerPlayer player, MinecraftServer server) {
+        this.player = player;
+        this.server = server;
+        playerManager = server.getPlayerList();
+        profile = player.getGameProfile();
+    }
+
+    @Override
+    public String getName() {
+        if(player == null) return "";
+        return player.getName().getString();
+    }
+
+    @Override
+    public String getUUID() {
+        if(player == null) return null;
+        return player.getStringUUID();
+    }
+
+    @Override
+    public boolean isOnline() {
+        return true;
+    }
+
+    @Override
+    public boolean isBanned() {
+        return false;
+    }
+
+    @Override
+    public String getBanReason() { return null; }
+
+    @Override
+    public void pardon() { }
+
+    @Override
+    public InetAddress getAddress() {
+        try {
+            return InetAddress.getByName(player.getIpAddress());
+        } catch (UnknownHostException e) {
+            return null;
+        }
+    }
+}

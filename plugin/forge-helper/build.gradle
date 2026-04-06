@@ -1,18 +1,7 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '[6.0.36,6.2)', changing: true
-    }
-}
-
 plugins {
     id 'java-library'
+    id 'net.minecraftforge.gradle' version '[7.0.17,8)'
 }
-
-apply plugin: 'net.minecraftforge.gradle'
 
 base {
     archivesName = "forge-helper"
@@ -20,24 +9,17 @@ base {
 
 minecraft {
     mappings channel: 'official', version: common_minecraft_version
-    reobf = false
-    copyIdeResources = true
 }
 
 repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
     mavenCentral()
-    maven {
-        name = 'forge'
-        url = 'https://maven.minecraftforge.net'
-    }
-    maven {
-        name = 'minecraft libraries'
-        url = 'https://libraries.minecraft.net'
-    }
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${common_minecraft_version}-${common_forge_version}"
+    implementation minecraft.dependency("net.minecraftforge:forge:${common_minecraft_version}-${common_forge_version}")
     compileOnly(project(":core"))
 }
 

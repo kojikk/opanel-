@@ -7,6 +7,7 @@ import net.opanel.common.OPanelDifficulty;
 import net.opanel.common.OPanelGameMode;
 import net.opanel.common.OPanelSave;
 import net.opanel.common.OPanelServer;
+import net.opanel.common.features.BukkitDimensionFeature;
 import net.opanel.utils.Utils;
 import org.bukkit.Difficulty;
 import org.bukkit.Server;
@@ -19,7 +20,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Properties;
 
-public abstract class BaseBukkitSave implements OPanelSave {
+public abstract class BaseBukkitSave implements OPanelSave, BukkitDimensionFeature {
     protected final JavaPlugin plugin;
     protected final TaskRunner runner;
     protected final Server server;
@@ -67,6 +68,16 @@ public abstract class BaseBukkitSave implements OPanelSave {
     @Override
     public Path getPath() {
         return savePath.toAbsolutePath();
+    }
+
+    @Override
+    public Path getNetherPath() {
+        return Path.of("DIM-1");
+    }
+
+    @Override
+    public Path getTheEndPath() {
+        return Path.of("DIM1");
     }
 
     @Override

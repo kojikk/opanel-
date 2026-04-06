@@ -1,4 +1,5 @@
 plugins {
+    id 'java'
     id 'com.gradleup.shadow' version '8.3.8'
 }
 
@@ -23,7 +24,9 @@ repositories {
     }
 }
 
-archivesBaseName = "${rootProject.name}-spigot"
+base {
+    archivesName = "${rootProject.name}-spigot"
+}
 
 dependencies {
     compileOnly "org.spigotmc:spigot-api:${minecraft_version}-R0.1-SNAPSHOT"
@@ -39,9 +42,9 @@ dependencies {
 shadowJar {
     configurations = [project.configurations.shadowImplementation]
 
-    archiveBaseName = baseName +"-build"
-    archiveClassifier = ''
-    destinationDirectory = file "../build/libs"
+    archiveBaseName.set(base.archivesName.map { it + "-build" })
+    archiveClassifier.set('')
+    destinationDirectory.set(file("../build/libs"))
 
     relocate 'com.google.gson', 'net.opanel.deps.gson'
     relocate 'org.objectweb.asm', 'net.opanel.deps.objectweb.asm'
