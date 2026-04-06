@@ -1,24 +1,38 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getAccessibleServerIds, P, hasPermission } from "@/lib/auth";
 import { createServer, listServers } from "@/lib/server-manager";
 
 export async function GET(request: NextRequest) {
+  let auth;
   try {
-    await requireAuth(request);
+    auth = await requireAuth(request);
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const servers = await listServers();
-  return NextResponse.json(servers);
+  const accessible = await getAccessibleServerIds(auth);
+
+  if (accessible === "all") {
+    return NextResponse.json(servers);
+  }
+
+  const filtered = servers.filter((s) => accessible.includes(s.id));
+  return NextResponse.json(filtered);
 }
 
 export async function POST(request: NextRequest) {
+  let auth;
   try {
-    await requireAuth(request);
+    auth = await requireAuth(request);
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Only OWNER/ADMIN can create servers
+  if (auth.role !== "OWNER" && auth.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
