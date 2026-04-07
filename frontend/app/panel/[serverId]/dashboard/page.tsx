@@ -30,7 +30,7 @@ export default function DashboardPage() {
   const [monitorHistory, setMonitorHistory] = useState<MonitorSnapshot[]>(
     Array(HISTORY_SIZE).fill({ cpu: 0, memory: 0, tps: 20 })
   );
-  const [players, setPlayers] = useState<{ online: number; max: number } | null>(null);
+  const [players, setPlayers] = useState<{ online: number; max: number; players: string[] } | null>(null);
 
   useEffect(() => {
     const poll = async () => {
@@ -46,7 +46,7 @@ export default function DashboardPage() {
 
       try {
         const p = await api.players.list();
-        setPlayers({ online: p.online, max: p.max });
+        setPlayers(p);
       } catch {
         setPlayers(null);
       }
@@ -82,6 +82,7 @@ export default function DashboardPage() {
           monitorHistory={monitorHistory}
           playersOnline={players?.online ?? 0}
           playersMax={players?.max ?? 0}
+          playersList={players?.players ?? []}
         />
       </div>
     </SubPage>

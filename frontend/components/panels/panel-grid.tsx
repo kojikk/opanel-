@@ -55,6 +55,7 @@ interface PanelGridProps {
   monitorHistory: MonitorSnapshot[];
   playersOnline: number;
   playersMax: number;
+  playersList: string[];
 }
 
 export function PanelGrid({
@@ -65,6 +66,7 @@ export function PanelGrid({
   monitorHistory,
   playersOnline,
   playersMax,
+  playersList,
 }: PanelGridProps) {
   const { width, containerRef, mounted } = useContainerWidth();
   const latest = monitorHistory[monitorHistory.length - 1];
@@ -73,7 +75,7 @@ export function PanelGrid({
     () => ({
       "server-info": <ServerInfoPanel />,
       uptime: <UptimePanel />,
-      players: <PlayersPanel />,
+      players: <PlayersPanel players={playersList} online={playersOnline} max={playersMax} />,
       "cpu-ram": <CpuRamPanel history={monitorHistory} />,
       console: <ConsolePanel />,
       tps: <TpsPanel history={monitorHistory} />,
@@ -85,7 +87,7 @@ export function PanelGrid({
         />
       ),
     }),
-    [monitorHistory, latest, playersOnline, playersMax]
+    [monitorHistory, latest, playersOnline, playersMax, playersList]
   );
 
   const handleLayoutChange = useCallback(

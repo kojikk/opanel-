@@ -1,29 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { serverApi } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 
-export function PlayersPanel() {
-  const { serverId } = useParams<{ serverId: string }>();
-  const api = serverApi(serverId);
-  const [players, setPlayers] = useState<{ online: number; max: number; players: string[] } | null>(null);
+interface PlayersPanelProps {
+  players?: string[];
+  online?: number;
+  max?: number;
+}
 
-  useEffect(() => {
-    const poll = async () => {
-      try {
-        setPlayers(await api.players.list());
-      } catch {
-        setPlayers(null);
-      }
-    };
-    poll();
-    const interval = setInterval(poll, 5000);
-    return () => clearInterval(interval);
-  }, [serverId]);
+export function PlayersPanel({ players: playersList, online, max }: PlayersPanelProps) {
+  const { serverId } = useParams<{ serverId: string }>();
+  const players = playersList ? { online: online ?? 0, max: max ?? 0, players: playersList } : null;
 
   return (
     <div className="flex flex-col h-full">
