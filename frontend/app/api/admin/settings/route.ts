@@ -4,6 +4,7 @@ import cron from "node-cron";
 import { requireAuth } from "@/lib/auth";
 import { getPanelSettings, updatePanelSettings, PANEL_SETTING_DEFAULTS } from "@/lib/panel-settings";
 import { restartMetricsCollector } from "@/lib/metrics/collector";
+import { restartBackupScheduler } from "@/lib/backups/scheduler";
 
 /** GET current panel settings. OWNER/ADMIN only. */
 export async function GET(request: NextRequest) {
@@ -73,6 +74,13 @@ export async function PATCH(request: NextRequest) {
   // Reload background workers that depend on these settings.
   if ("metricsIntervalMinutes" in updates || "metricsRetentionDays" in updates) {
     await restartMetricsCollector();
+  }
+  if (
+    "autoBackupEnabled" in updates ||
+    "autoBackupCron" in updates ||
+    "backupRetentionDays" in updates
+  ) {
+    await restartBackupScheduler();
   }
 
   return NextResponse.json({ settings: updated });

@@ -67,6 +67,7 @@ model Server {
   tasks           Task[]
   access          ServerAccess[]
   metrics         ServerMetric[]
+  backups         Backup[]
 }
 
 model Task {
@@ -96,4 +97,22 @@ model ServerMetric {
 model PanelSetting {
   key   String @id
   value String
+}
+
+enum BackupType {
+  MANUAL
+  AUTO
+}
+
+model Backup {
+  id        String     @id @default(cuid())
+  serverId  String
+  server    Server     @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  fileName  String
+  size      BigInt
+  type      BackupType @default(MANUAL)
+  notes     String?
+  createdAt DateTime   @default(now())
+
+  @@index([serverId, createdAt])
 }

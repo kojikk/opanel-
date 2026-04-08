@@ -12,4 +12,8 @@ export async function register() {
   // Metrics collector — periodic snapshots of CPU/RAM/TPS/players for each server.
   const { startMetricsCollector } = await import("@/lib/metrics/collector");
   await startMetricsCollector();
+
+  // Backup scheduler — automatic snapshots of server data folders.
+  const { startBackupScheduler } = await import("@/lib/backups/scheduler");
+  await startBackupScheduler();
 }

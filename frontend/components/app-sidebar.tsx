@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useContext } from "react";
-import { Blocks, ClockFading, Earth, Gauge, PaintBucket, PencilRuler, ScrollText, SquareTerminal, Users, ArrowLeft } from "lucide-react";
+import { Archive, Blocks, ClockFading, Earth, Gauge, PaintBucket, PencilRuler, ScrollText, SquareTerminal, Users, ArrowLeft } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -42,6 +42,7 @@ function getMenuItems(serverId: string) {
     ],
     configuration: [
       { name: $("sidebar.config.tasks"), url: `${base}/tasks`, icon: ClockFading },
+      { name: $("sidebar.config.backups"), url: `${base}/backups`, icon: Archive },
       { name: $("sidebar.config.settings"), url: `${base}/settings`, icon: PaintBucket },
     ],
   };

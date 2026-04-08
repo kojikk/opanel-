@@ -15,6 +15,7 @@ export const P = {
   SERVER_STOP:           "server.stop",
   SERVER_DELETE:         "server.delete",
   SERVER_CREATE:         "server.create",
+  SERVER_RENAME:         "server.rename",
 
   // Console
   CONSOLE_VIEW:          "console.view",
@@ -64,6 +65,12 @@ export const P = {
 
   // Monitoring
   MONITOR_VIEW:          "monitor.view",
+
+  // Backups
+  BACKUP_VIEW:           "backup.view",
+  BACKUP_CREATE:         "backup.create",
+  BACKUP_RESTORE:        "backup.restore",
+  BACKUP_DELETE:         "backup.delete",
 } as const;
 
 export type Permission = (typeof P)[keyof typeof P];
@@ -81,6 +88,7 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
       { key: P.SERVER_STOP, label: "Stop server" },
       { key: P.SERVER_DELETE, label: "Delete server" },
       { key: P.SERVER_CREATE, label: "Create servers" },
+      { key: P.SERVER_RENAME, label: "Rename server" },
     ],
   },
   {
@@ -163,6 +171,15 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     label: "Monitoring",
     permissions: [
       { key: P.MONITOR_VIEW, label: "View CPU / RAM / TPS" },
+    ],
+  },
+  {
+    label: "Backups",
+    permissions: [
+      { key: P.BACKUP_VIEW, label: "View backups" },
+      { key: P.BACKUP_CREATE, label: "Create backups" },
+      { key: P.BACKUP_RESTORE, label: "Restore from backups" },
+      { key: P.BACKUP_DELETE, label: "Delete backups" },
     ],
   },
 ];

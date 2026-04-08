@@ -109,7 +109,7 @@ export function PanelSettingsTab() {
         <CardHeader>
           <CardTitle>Automatic Backups</CardTitle>
           <CardDescription>
-            Schedule and retention for server backups. Backups feature itself is coming soon.
+            Schedule and retention for automatic server backups.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

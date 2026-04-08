@@ -27,6 +27,7 @@ const PERMISSION_GROUPS = [
       { key: "server.stop", label: "Stop server" },
       { key: "server.delete", label: "Delete server" },
       { key: "server.create", label: "Create servers" },
+      { key: "server.rename", label: "Rename server" },
     ],
   },
   {
@@ -109,6 +110,15 @@ const PERMISSION_GROUPS = [
     label: "Monitoring",
     permissions: [
       { key: "monitor.view", label: "View CPU / RAM / TPS" },
+    ],
+  },
+  {
+    label: "Backups",
+    permissions: [
+      { key: "backup.view", label: "View backups" },
+      { key: "backup.create", label: "Create backups" },
+      { key: "backup.restore", label: "Restore from backups" },
+      { key: "backup.delete", label: "Delete backups" },
     ],
   },
 ];

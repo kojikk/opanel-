@@ -147,5 +147,18 @@ export function serverApi(serverId: string) {
       pluginWsUrl: string;
       endpoints: { players: string; terminal: string; inventory: string };
     }>(`${base}/ws`),
+    backups: {
+      list: () => sendGetRequest<{
+        id: string; serverId: string; fileName: string; size: number;
+        type: "MANUAL" | "AUTO"; notes: string | null; createdAt: string;
+      }[]>(`${base}/backups`),
+      create: (notes?: string) => sendPostRequest(`${base}/backups`, { notes }),
+      remove: (backupId: string) => sendDeleteRequest(`${base}/backups`, { backupId }),
+      inspect: (backupId: string) =>
+        sendGetRequest<{ entries: string[] }>(`${base}/backups/${backupId}/restore`),
+      restore: (backupId: string, paths?: string[]) =>
+        sendPostRequest(`${base}/backups/${backupId}/restore`, { paths }),
+      downloadUrl: (backupId: string) => `${base}/backups/${backupId}/download`,
+    },
   };
 }

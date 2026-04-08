@@ -71,6 +71,7 @@
   "sidebar.management.code-of-conduct": "Code of Conduct",
   "sidebar.config": "Configurations",
   "sidebar.config.tasks": "Scheduled Tasks",
+  "sidebar.config.backups": "Backups",
   "sidebar.config.bukkit-config": "Bukkit Config",
   "sidebar.config.settings": "Server Config",
 

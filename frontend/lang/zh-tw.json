@@ -71,6 +71,7 @@
   "sidebar.management.code-of-conduct": "行為準則",
   "sidebar.config": "配置",
   "sidebar.config.tasks": "定時任務",
+  "sidebar.config.backups": "備份",
   "sidebar.config.bukkit-config": "Bukkit 配置",
   "sidebar.config.settings": "Server Config",
 
