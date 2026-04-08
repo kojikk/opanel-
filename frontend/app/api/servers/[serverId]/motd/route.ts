@@ -16,7 +16,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const content = await readServerFile(serverId, "server.properties");
     const match = content.match(/^motd=(.*)$/m);
-    const motd = match ? match[1] : "A Minecraft Server";
+    const raw = match ? match[1] : "A Minecraft Server";
+    // Decode Java properties escapes (\u00A7 → §, etc.) for editing.
+    const motd = raw.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    );
     return NextResponse.json({ motd });
   } catch {
     return NextResponse.json({ motd: "A Minecraft Server" });
@@ -43,9 +47,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const content = await readServerFile(serverId, "server.properties");
 
+    // Encode non-ASCII characters as Java properties Unicode escapes
+    // (e.g. § → \u00A7) so the file remains ASCII-safe and is read
+    // correctly by all Minecraft server versions.
+    const encoded = motd.replace(/[\u0080-\uFFFF]/g, (ch) =>
+      "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0")
+    );
+
     const updated = content.match(/^motd=/m)
-      ? content.replace(/^motd=.*$/m, `motd=${motd}`)
-      : `${content.trimEnd()}\nmotd=${motd}\n`;
+      ? content.replace(/^motd=.*$/m, `motd=${encoded}`)
+      : `${content.trimEnd()}\nmotd=${encoded}\n`;
 
     await writeServerFile(serverId, "server.properties", updated);
     return NextResponse.json({ ok: true });

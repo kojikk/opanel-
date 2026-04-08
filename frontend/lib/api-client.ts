@@ -116,6 +116,11 @@ export function serverApi(serverId: string) {
       cpu: number; memory: number; memoryLimit: number; memoryPercent: number;
       tps: number; mspt: number; isPaused: boolean;
     }>(`${base}/monitor`),
+    metrics: (range: "1h" | "24h" | "7d" | "30d") =>
+      sendGetRequest<{
+        range: string;
+        points: { t: number; cpu: number; memory: number; tps: number; players: number }[];
+      }>(`${base}/metrics?range=${range}`),
     terminal: {
       send: (command: string) => sendPostRequest<{ result: string }>(`${base}/terminal`, { command }),
     },

@@ -66,6 +66,7 @@ model Server {
   createdAt       DateTime       @default(now())
   tasks           Task[]
   access          ServerAccess[]
+  metrics         ServerMetric[]
 }
 
 model Task {
@@ -77,4 +78,22 @@ model Task {
   commands  String[]
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+model ServerMetric {
+  id        String   @id @default(cuid())
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+  cpu       Float
+  memory    Int
+  tps       Float
+  players   Int
+
+  @@index([serverId, timestamp])
+}
+
+model PanelSetting {
+  key   String @id
+  value String
 }

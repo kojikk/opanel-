@@ -270,12 +270,11 @@
     - Загрузка/смена PNG‑иконки (64×64), предпросмотр.
     - Inline‑редактирование MOTD с поддержкой Minecraft‑цветовых кодов (`§`) и превью.
 
-- **3.4.2. Автоматическая сборка и установка плагина OPanel**
-  - [ ] При создании сервера (или по кнопке в Settings):
-    - Триггерить Gradle‑сборку плагина (`./gradlew build` в `plugin/`) через `child_process` или Docker‑контейнер с JDK.
-    - Копировать собранный `.jar` из `plugin/build/libs/` в папку `plugins/` сервера.
-  - [ ] Статус сборки отображать в UI (прогресс / лог / ошибка).
-  - [ ] Поле `pluginInstalled` в Prisma обновлять по результату.
+- **3.4.2. Автоматическая сборка и установка плагина OPanel** ✅
+  - [x] При создании сервера триггерится `./gradlew :<module>:build -x test` через `execFile` (`buildPluginModule` в `lib/server-manager/index.ts`).
+  - [x] Готовый `.jar` копируется в `plugins/` сервера (`installPlugin`).
+  - [x] Прогресс отображается в UI через provisioning state (`setProvisioning`).
+  - [x] Поле `pluginInstalled` в Prisma обновляется по результату.
 
 - **3.4.3. Импорт существующего сервера из папки**
   - [ ] API `POST /api/servers/import`:
@@ -300,8 +299,7 @@
 ### 3.5. Полировка DX и тесты
 
 - [ ] Улучшить сообщения об ошибках: Docker‑демон недоступен, RCON‑таймаут, плагин не установлен.
-- [ ] Tooltip’ы для cron, gamerules, JVM memory.
-- [ ] Адаптив: проверить все страницы на мобильных breakpoints.
+- [ ] Базовый адаптив для мобильных (основная платформа — ПК, цель — чтобы страницы не ломались).
 - [ ] Дополнительные Vitest‑тесты: RCON‑парсеры (edge‑cases), server‑manager (autoStart, pluginInstalled, import).
 
 ---

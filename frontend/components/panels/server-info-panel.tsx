@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ServerContext } from "@/contexts/server-context";
+import { formatConsoleLine } from "@/lib/formatting-codes/console";
 
 export function ServerInfoPanel() {
   const { serverId } = useParams<{ serverId: string }>();
@@ -138,30 +139,41 @@ export function ServerInfoPanel() {
 
           <div className="flex items-center gap-1.5 min-w-0">
             {editingMotd ? (
-              <div className="flex items-center gap-1 flex-1 min-w-0">
-                <Input
-                  value={motdDraft}
-                  onChange={(e) => setMotdDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleMotdSave();
-                    if (e.key === "Escape") setEditingMotd(false);
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={motdDraft}
+                    onChange={(e) => setMotdDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleMotdSave();
+                      if (e.key === "Escape") setEditingMotd(false);
+                    }}
+                    className="h-7 text-sm flex-1 font-mono"
+                    placeholder="Server MOTD (use § for color codes)..."
+                    autoFocus
+                  />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleMotdSave}>
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingMotd(false)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div
+                  className="text-xs font-mono px-2 py-1 rounded-sm bg-black/40 truncate"
+                  dangerouslySetInnerHTML={{
+                    __html: formatConsoleLine(motdDraft || "(preview)"),
                   }}
-                  className="h-7 text-sm flex-1"
-                  placeholder="Server MOTD..."
-                  autoFocus
                 />
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleMotdSave}>
-                  <Check className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingMotd(false)}>
-                  <X className="h-3.5 w-3.5" />
-                </Button>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 min-w-0 group/motd">
-                <p className="text-sm text-muted-foreground truncate">
-                  {motd || "A Minecraft Server"}
-                </p>
+                <p
+                  className="text-sm font-mono truncate"
+                  dangerouslySetInnerHTML={{
+                    __html: formatConsoleLine(motd || "A Minecraft Server"),
+                  }}
+                />
                 <Button
                   variant="ghost"
                   size="icon"

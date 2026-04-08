@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Shield, Users, MonitorCog, Trash2, LogOut, KeyRound, Plus, X } from "lucide-react";
+import { ArrowLeft, Shield, Users, MonitorCog, Trash2, LogOut, KeyRound, Plus, X, Settings } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Navbar } from "@/components/navbar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { sendGetRequest, sendPostRequest, sendPatchRequest, sendDeleteRequest } from "@/lib/api-client";
 import { useCheckAuth } from "@/hooks/use-check-auth";
+import { PanelSettingsTab } from "./panel-settings-tab";
 
 // Must match lib/auth/permissions.ts PERMISSION_GROUPS
 const PERMISSION_GROUPS = [
@@ -296,6 +297,9 @@ export default function AdminPage() {
             <TabsTrigger value="sessions" className="gap-1.5">
               <MonitorCog className="w-4 h-4" /> Sessions
             </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-1.5">
+              <Settings className="w-4 h-4" /> Panel Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Users Tab ──────────────────────────────────── */}
@@ -347,6 +351,11 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+
+          {/* ── Panel Settings Tab ─────────────────────────── */}
+          <TabsContent value="settings" className="mt-4">
+            <PanelSettingsTab />
           </TabsContent>
 
           {/* ── Sessions Tab ───────────────────────────────── */}
