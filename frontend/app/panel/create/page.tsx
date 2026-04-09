@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { sendPostRequest } from "@/lib/api-client";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Navbar } from "@/components/navbar";
+import { useCheckAuth } from "@/hooks/use-check-auth";
 import { toast } from "sonner";
 
 const SERVER_TYPES = ["PAPER", "SPIGOT", "FABRIC", "FORGE", "NEOFORGE", "FOLIA", "VANILLA"];
@@ -31,7 +32,16 @@ const MEMORY_OPTIONS = ["1G", "2G", "4G", "6G", "8G", "12G", "16G"];
 
 export default function CreateServerPage() {
   const router = useRouter();
+  const user = useCheckAuth();
   const [creating, setCreating] = useState(false);
+
+  // Non-admins can't create servers — bounce them back to the list.
+  useEffect(() => {
+    if (user && user.role !== "OWNER" && user.role !== "ADMIN") {
+      toast.error("You don't have permission to create servers");
+      router.replace("/panel");
+    }
+  }, [user, router]);
 
   const [name, setName] = useState("");
   const [type, setType] = useState("PAPER");

@@ -20,12 +20,17 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ServerContext } from "@/contexts/server-context";
+import { useHasPermission } from "@/contexts/server-permissions-context";
+import { P } from "@/lib/auth/permissions";
 import { formatConsoleLine } from "@/lib/formatting-codes/console";
 
 export function ServerInfoPanel() {
   const { serverId } = useParams<{ serverId: string }>();
   const serverCtx = useContext(ServerContext);
   const api = serverApi(serverId);
+
+  const canEditIcon = useHasPermission(P.ICON_EDIT);
+  const canControlServer = useHasPermission(P.SERVER_START);
 
   const [status, setStatus] = useState(serverCtx?.status ?? "unknown");
   const [actionLoading, setActionLoading] = useState(false);
@@ -53,7 +58,7 @@ export function ServerInfoPanel() {
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !canEditIcon) return;
     try {
       await api.icon.upload(file);
       setIconKey((k) => k + 1);
@@ -103,8 +108,12 @@ export function ServerInfoPanel() {
           <TooltipTrigger asChild>
             <button
               type="button"
-              onClick={() => iconInputRef.current?.click()}
-              className="group/icon relative w-16 h-16 shrink-0 rounded-md border bg-muted overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all"
+              onClick={() => canEditIcon && iconInputRef.current?.click()}
+              disabled={!canEditIcon}
+              className={cn(
+                "group/icon relative w-16 h-16 shrink-0 rounded-md border bg-muted overflow-hidden transition-all",
+                canEditIcon ? "cursor-pointer hover:ring-2 ring-primary" : "cursor-default",
+              )}
             >
               {iconUrl ? (
                 <img src={iconUrl} alt="Server icon" className="w-full h-full object-cover image-pixelated" />
@@ -113,12 +122,14 @@ export function ServerInfoPanel() {
                   <Server className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/icon:opacity-100 transition-opacity flex items-center justify-center">
-                <ImagePlus className="h-5 w-5 text-white" />
-              </div>
+              {canEditIcon && (
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/icon:opacity-100 transition-opacity flex items-center justify-center">
+                  <ImagePlus className="h-5 w-5 text-white" />
+                </div>
+              )}
             </button>
           </TooltipTrigger>
-          <TooltipContent>Change server icon</TooltipContent>
+          <TooltipContent>{canEditIcon ? "Change server icon" : "No permission to change icon"}</TooltipContent>
         </Tooltip>
         <input
           ref={iconInputRef}
@@ -174,14 +185,16 @@ export function ServerInfoPanel() {
                     __html: formatConsoleLine(motd || "A Minecraft Server"),
                   }}
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0 opacity-0 group-hover/motd:opacity-100 transition-opacity"
-                  onClick={() => { setMotdDraft(motd); setEditingMotd(true); }}
-                >
-                  <Pencil className="h-3 w-3" />
-                </Button>
+                {canEditIcon && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 opacity-0 group-hover/motd:opacity-100 transition-opacity"
+                    onClick={() => { setMotdDraft(motd); setEditingMotd(true); }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -198,15 +211,30 @@ export function ServerInfoPanel() {
         <div className="flex items-start gap-2 shrink-0">
           {status === "running" ? (
             <>
-              <Button variant="outline" size="sm" disabled={actionLoading} onClick={() => handleAction("restart")}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={actionLoading || !canControlServer}
+                onClick={() => handleAction("restart")}
+              >
                 <RotateCw className="h-4 w-4 mr-1" /> Restart
               </Button>
-              <Button variant="outline" size="sm" disabled={actionLoading} onClick={() => handleAction("stop")}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={actionLoading || !canControlServer}
+                onClick={() => handleAction("stop")}
+              >
                 <Square className="h-4 w-4 mr-1" /> Stop
               </Button>
             </>
           ) : (
-            <Button variant="outline" size="sm" disabled={actionLoading} onClick={() => handleAction("start")}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={actionLoading || !canControlServer}
+              onClick={() => handleAction("start")}
+            >
               <Play className="h-4 w-4 mr-1" /> Start
             </Button>
           )}
