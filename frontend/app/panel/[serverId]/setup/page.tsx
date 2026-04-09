@@ -18,7 +18,7 @@ interface ProvisioningStatus {
 
 const STEPS = [
   { key: "pulling", label: "Pulling Docker image" },
-  { key: "building", label: "Building OPanel plugin" },
+  { key: "building", label: "Building FleetPanel plugin" },
   { key: "creating", label: "Creating container" },
   { key: "starting", label: "Starting server" },
   { key: "ready", label: "Server is ready" },

@@ -1,4 +1,4 @@
-# OPanel — UI/UX Redesign: Liquid Glass + Modular Panels
+# FleetPanel — UI/UX Redesign: Liquid Glass + Modular Panels
 
 ## 1. UX Design (User Experience)
 

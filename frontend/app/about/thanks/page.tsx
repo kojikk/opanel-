@@ -25,6 +25,31 @@ import { Text } from "@/components/i18n-text";
 
 const thanksList = [
   {
+    name: "OPanel",
+    author: "Norcleeh",
+    repo: "opanel-mc/opanel"
+  },
+  {
+    name: "Next.js",
+    author: "Vercel",
+    repo: "vercel/next.js"
+  },
+  {
+    name: "Prisma",
+    author: "Prisma",
+    repo: "prisma/prisma"
+  },
+  {
+    name: "Shadcn UI",
+    author: "shadcn",
+    repo: "shadcn/ui"
+  },
+  {
+    name: "Lucide Icons",
+    author: "Lucide Contributors",
+    repo: "lucide-icons/lucide"
+  },
+  {
     name: "Javalin",
     author: "David Åse",
     repo: "javalin/javalin"
@@ -50,19 +75,14 @@ const thanksList = [
     repo: "myworldzycpc/snbt-js"
   },
   {
-    name: "Shadcn UI",
-    author: "shadcn",
-    repo: "shadcn/ui"
-  },
-  {
-    name: "Lucide Icons",
-    author: "Lucide Contributors",
-    repo: "lucide-icons/lucide"
-  },
-  {
     name: "ansi-to-html",
     author: "Rob Burns",
     repo: "rburns/ansi-to-html"
+  },
+  {
+    name: "dockerode",
+    author: "Apocas",
+    repo: "apocas/dockerode"
   }
 ];
 
@@ -76,7 +96,7 @@ export default function Thanks() {
         <Text
           id="about.thanks-list.intro"
           args={[
-            <span className={cn("text-theme font-semibold", minecraftAE.className)} key={0}>OPanel</span>
+            <span className={cn("text-theme font-semibold", minecraftAE.className)} key={0}>FleetPanel</span>
           ]}/>
         <Table>
           <TableHeader>
@@ -108,17 +128,13 @@ export default function Thanks() {
           {$("about.thanks-list.footer")}
         </p>
         <h2 className="text-lg font-semibold">{$("about.thanks-list.special")}</h2>
-        <div className="flex max-md:flex-col justify-between items-center gap-2 text-sm [&_a]:underline [&_a]:underline-offset-2">
-          <p className="leading-6">
-            <b>NekoMaid</b> {$("about.thanks-list.special.description1")}<br />
-            {$("about.thanks-list.special.description2")}
+        <div className="space-y-3 text-sm leading-6">
+          <p>
+            <b>OPanel</b> {$("about.thanks-list.special.opanel")}
           </p>
-          <div className="flex flex-col items-end max-md:items-center *:whitespace-nowrap">
-            <span className="font-semibold">Shirasawa</span>
-            <a href={`https://github.com/neko-craft/NekoMaid`} target="_blank" rel="noopener noreferrer">
-              neko-craft/NekoMaid
-            </a>
-          </div>
+          <p>
+            <b>Claude</b> {$("about.thanks-list.special.claude")}
+          </p>
         </div>
       </CardContent>
       <CardFooter className="flex">

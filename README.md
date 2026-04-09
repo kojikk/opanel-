@@ -2,68 +2,219 @@
 
 <img src="./images/brand.svg" width="300"/>
 
-<br>
-<br>
+# FleetPanel
 
-[![test](https://img.shields.io/github/actions/workflow/status/nocpiun/opanel/build.yml)](https://github.com/nocpiun/opanel/actions/workflows/build.yml)
 [![LICENSE](https://img.shields.io/badge/license-MPL_2.0-blue.svg "LICENSE")](./LICENSE)
-[![Stars](https://img.shields.io/github/stars/nocpiun/opanel.svg?label=Stars)](https://github.com/nocpiun/opanel/stargazers)
+[![Fork of](https://img.shields.io/badge/fork%20of-opanel--mc%2Fopanel-purple.svg)](https://github.com/opanel-mc/opanel)
 
-> A Minecraft server management panel
-
-English | [中文](README-zh.md)
+> Self-hosted Minecraft multi-server management panel with Docker orchestration,
+> granular permissions and historical monitoring.
 
 </div>
 
-## Description
+## About
 
-OPanel is a management panel for Minecraft server administrators, and it comes as a server-side plugin that can be run on Bukkit, Spigot, Paper, Fabric, Forge and NeoForge servers. With the web panel, you can manage your server in a more reliable, intuitive and simple way!
+**FleetPanel** is a fork of [OPanel](https://github.com/opanel-mc/opanel) that
+turns the original single-server panel into a full multi-server control plane.
+Each Minecraft server runs inside its own Docker container; the web panel
+provisions them from the UI, manages their lifecycle, monitors them over time,
+and exposes everything through a granular permission system.
 
-### Features
+The Java plugin that runs inside the server (`net.opanel.*`) is still the one
+from upstream OPanel — FleetPanel bundles it and talks to it over the same HTTP
+API. The rest of the panel (Next.js frontend, PostgreSQL, Docker SDK, auth,
+backups, scheduler, historical metrics) is the part that has been rebuilt for
+this fork.
 
-The features of OPanel include:
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to report bugs or propose
+changes.
 
-- Dashboard that provides a comprehensive overview of the server
-- Saves manager that helps you easily upload, download, delete or enable your saves through a simple interface.
-- Players manager that helps you manage players, banned players and whitelist, and perform actions like kick, ban or changing permissions.
-- Gamerules editor that assists you to toggle gamerules without entering any command.
-- Plugin manager that allows you to enable / disable plugins or mods and view detailed plugin information.
-- Server terminal that can directly send messages or execute commands from the web panel.
-- Server logs manager and viewer.
+## What's different from upstream OPanel
 
-### Screenshots
+| Area                  | Upstream OPanel                                  | FleetPanel                                                                    |
+| --------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Server model          | Single server, panel talks to one plugin         | Multi-server, panel provisions and manages N Docker containers                |
+| Hosting               | Plugin runs panel in-process                     | Panel runs stand-alone (Next.js + Postgres), plugin is only an agent          |
+| Server creation       | Manual (install plugin by hand)                  | Create-server wizard in the UI, plugin is built and installed automatically   |
+| Auth                  | Single access key                                | User accounts (bcrypt, JWT session), OWNER / ADMIN / USER roles               |
+| Permissions           | All-or-nothing                                   | 40+ granular per-server permissions grouped by category                       |
+| Monitoring            | Live only                                        | Historical metrics in Postgres, charts over time                              |
+| Dashboard             | Fixed layout                                     | Draggable / resizable grid of panels, saved per user                          |
+| Backups               | —                                                | Manual + scheduled world backups with restore                                 |
+| Scheduled tasks       | —                                                | Cron-style scheduled console commands per server                              |
+| Admin                 | —                                                | Admin panel: user CRUD, role assignment, per-server access grants             |
+| i18n                  | en, zh                                           | en, zh-cn, zh-tw, zh-hk (UI strings rebranded, upstream Chinese docs dropped) |
 
-![preview-dashboard](./images/preview-dashboard.png)
+## Features
 
-![preview-players](./images/preview-players.png)
+### Multi-server management
 
-![preview-inventory](./images/preview-inventory.png)
+- **Create servers from the UI** — wizard picks server type
+  (Paper / Spigot / Fabric / Forge / NeoForge), Minecraft version, memory,
+  Java version, game / RCON / plugin ports, data path.
+- **Docker orchestration** — each server runs in its own container; the panel
+  pulls images, builds and installs the plugin, creates containers, wires
+  volumes and exposes ports automatically.
+- **Lifecycle controls** — start, stop, restart, delete, rename, from a single
+  server list.
+- **Provisioning progress** — a dedicated setup page polls status
+  (pulling → building plugin → creating → starting → ready) with a progress bar
+  and error surfacing.
 
-![preview-inventory-nbt](./images/preview-inventory-nbt.png)
+### Dashboard
 
-![preview-terminal](./images/preview-terminal.png)
+- **Customizable grid** — `react-grid-layout` lets users drag and resize
+  panels; layout is persisted per user, per server in `localStorage`.
+- **Panels** — Server info (name, type, version, port, memory, Java, icon,
+  MOTD, start/stop/restart), CPU & RAM, system stats, TPS, uptime, online
+  players, live console.
+- **Live + historical monitoring** — current readings plus charts backed by
+  the `ServerMetric` Postgres table (CPU %, memory, TPS, player count), with
+  CPU normalized to 0–100 even on multi-core hosts.
+- **Server icon & MOTD inline editing** — click the icon to upload a PNG,
+  click the MOTD pencil to edit; color-code preview uses the same renderer
+  as the console.
 
-![preview-tasks](./images/preview-tasks.png)
+### Console & terminal
 
-![preview-plugins](./images/preview-plugins.png)
+- **Interactive terminal page** — full-screen console with command history.
+- **Formatting codes** — unified pipeline handles both Minecraft `§` codes
+  and raw ANSI escape sequences, so colored output from Paper / Fabric
+  loggers renders correctly.
+- **Tab completion hints** and scroll-locked live view.
 
-## Usage
+### Players & whitelist
 
-Read the [Quick Start](https://opanel.cn/docs/quick-start.html) to get started.
+- Online / offline player lists with avatar, gamemode, latency.
+- Kick, ban, pardon, change gamemode, op / deop.
+- View and edit player inventory (NBT-aware).
+- Whitelist viewing and management.
 
-## Contributing
+### Worlds (saves)
 
-See [Contributing Guidelines](https://opanel.cn/docs/contributing.html) for more information.
+- List, upload, download, delete and enable worlds.
+- World directory is mounted directly into the server container.
 
-## Friend Links
+### Gamerules editor
 
-[<img src="./images/friends/rainyun.png" width="300"/>](https://rainyun.com/opanel_)
-[<img src="./images/friends/chuqiyun.png" width="300"/>](https://chuqiyun.com)
+- Toggle gamerules without typing commands.
+- **MC 26.1 compatibility** — auto-detects the server's naming format
+  (`keepInventory` vs `keep_inventory`) via RCON and uses the correct form.
+- Error surface with retry when the server is unreachable.
 
-## Star History
+### Plugins / Mods
 
-[![Star History](https://api.star-history.com/svg?repos=opanel-mc/opanel&type=date&legend=top-left)](https://star-history.com/#opanel-mc/opanel&type=date&legend=top-left)
+- Enable, disable, upload and delete plugins (Bukkit family).
+- View detailed plugin information.
+
+### Logs
+
+- Browse and download server log files.
+- Permission-gated delete.
+
+### Scheduled tasks
+
+- Cron expressions per server (backed by `node-cron`).
+- Execute one or more console commands per run.
+- Enable / disable individual tasks without deleting them.
+
+### Backups
+
+- Manual and automatic (scheduled) backups of world saves.
+- Restore a backup back into a server.
+- Backup metadata (size, type, notes) tracked in Postgres.
+
+### Settings & config files
+
+- Monaco-based editor for `server.properties` and other configs.
+- Panel-level settings: theme, login banner, access key rotation.
+
+### Authentication, roles & permissions
+
+- **User accounts** stored in Postgres, passwords hashed with bcrypt,
+  JWT session cookies (`jose`).
+- **Global roles**: `OWNER`, `ADMIN`, `USER`. OWNER / ADMIN bypass all
+  permission checks.
+- **40+ granular per-server permissions** grouped by category:
+  Server lifecycle, Console, Players, Whitelist, Plugins, Saves, Logs,
+  Tasks, Gamerules, Settings, Icon & MOTD, Monitoring, Backups.
+- **Permission-aware UI** — sidebar hides sections the user can't see,
+  dashboard controls (icon, MOTD, start/stop/restart) disable when the user
+  lacks the right, direct visits to gated routes render a "No access" page.
+- **Dashboard landing fallback** — users without `monitor.view` are
+  auto-redirected to the first sidebar section they can access.
+
+### Admin panel
+
+- User CRUD (create, delete, reset password, toggle role).
+- Per-server access grants: assign granular permissions to a user for a
+  specific server.
+- Panel-wide settings tab (login banner, security, update check).
+
+## Supported Minecraft versions
+
+The Java plugin core targets these loaders / versions (see [`plugin/`](./plugin/)):
+
+- **Paper / Spigot**: 1.16.1, 1.19.4, 1.20, 1.20.5, 1.21, 1.21.9, 26.1
+- **Fabric**: 1.19, 1.19.4, 1.20, 1.20.2, 1.20.3, 1.20.5, 1.21, 1.21.2,
+  1.21.5, 1.21.9, 1.21.11, 26.1
+- **Forge**: 1.19.4, 1.20.1, 1.20.2, 1.20.3, 1.20.6, 1.21, 1.21.3, 1.21.5,
+  1.21.8, 1.21.9, 1.21.11, 26.1
+- **Folia**: 1.20, 1.20.5, 1.21, 1.21.11
+- **NeoForge**: 1.21.1
+
+## Tech stack
+
+**Frontend**: Next.js 15 (App Router, Turbopack), React 19, TypeScript,
+Tailwind CSS 4, Shadcn UI, Lucide, Monaco editor, recharts,
+react-grid-layout.
+
+**Backend** (Next.js route handlers): PostgreSQL + Prisma, dockerode,
+rcon-client, node-cron, jose (JWT), bcryptjs.
+
+**Plugin core** (inside each Minecraft server): Java, Javalin, Item-NBT-API.
+
+## Quick start (Docker)
+
+Requirements: Docker + Docker Compose, a host that can run Linux containers.
+
+```bash
+git clone https://github.com/kojikk/fleetpanel
+cd fleetpanel
+docker compose up -d
+```
+
+The panel will be available at `http://localhost:3001`. Managed Minecraft
+servers run as sibling containers; their world data is mounted under
+`./servers/<serverId>` on the host.
+
+Before exposing the panel to the internet you **must** override
+`JWT_SECRET` and the Postgres credentials in [`docker-compose.yml`](./docker-compose.yml).
+
+### Development
+
+```bash
+cd frontend
+pnpm install
+pnpm db:push        # create the Postgres schema
+pnpm dev            # Next.js dev server on :3001
+```
+
+See [`dev.bat`](./dev.bat) on Windows.
+
+## Credits
+
+- **[OPanel](https://github.com/opanel-mc/opanel)** by Norcleeh — the upstream
+  project and the source of the Java plugin core this fork still reuses.
+- **[Claude](https://claude.ai/code)** (Anthropic) — coding agent used during
+  the development of this fork to help design and implement the Docker
+  orchestration layer, permission system, admin panel, historical monitoring,
+  backups and dashboard rewrite.
+- Every open-source dependency listed on the panel's `/about/thanks` page.
 
 ## License
 
-[MPL-2.0](./LICENSE)
+[MPL-2.0](./LICENSE) — the same license as upstream OPanel.
+
+Per MPL § 3.4 the upstream copyright notices and license headers are preserved
+in this fork; new files added by FleetPanel are released under the same MPL-2.0.

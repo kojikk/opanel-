@@ -332,7 +332,7 @@ async function provisionServerAsync(
     await pullImage();
 
     // Build/install plugin (may trigger on-demand Gradle build)
-    setProvisioning(serverId, "building", 35, "Installing OPanel plugin...");
+    setProvisioning(serverId, "building", 35, "Installing FleetPanel agent plugin...");
     const pluginInstalled = await installPlugin(
       opts.dataPath, opts.type, opts.mcVersion,
       (msg) => setProvisioning(serverId, "building", 40, msg),

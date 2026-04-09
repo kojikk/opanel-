@@ -76,7 +76,7 @@ export function AppSidebar({ serverId }: { serverId?: string }) {
       <Sidebar collapsible="icon">
         <SidebarHeader className="h-12 pl-4 bg-transparent border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
           <Logo size={26}/>
-          <h1 className={cn("m-2 text-lg text-theme font-semibold select-none group-data-[state=collapsed]:hidden", minecraftAE.className)}>OPanel</h1>
+          <h1 className={cn("m-2 text-lg text-theme font-semibold select-none group-data-[state=collapsed]:hidden", minecraftAE.className)}>FleetPanel</h1>
         </SidebarHeader>
         <SidebarContent className="bg-transparent" />
         <SidebarFooter className="p-4 bg-transparent items-end group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:items-center">
@@ -97,7 +97,7 @@ export function AppSidebar({ serverId }: { serverId?: string }) {
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-12 pl-4 bg-transparent border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
         <Logo size={26}/>
-        <h1 className={cn("m-2 text-lg text-theme font-semibold select-none group-data-[state=collapsed]:hidden", minecraftAE.className)}>OPanel</h1>
+        <h1 className={cn("m-2 text-lg text-theme font-semibold select-none group-data-[state=collapsed]:hidden", minecraftAE.className)}>FleetPanel</h1>
       </SidebarHeader>
       <SidebarContent className="bg-transparent">
         <SidebarGroup>

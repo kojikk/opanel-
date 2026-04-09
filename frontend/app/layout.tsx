@@ -10,7 +10,13 @@ import { BrowserInit } from "./browser-init";
 import LogoIcon from "@/assets/images/logo.png";
 
 export const metadata: Metadata = {
-  authors: [{ name: "Norcleeh", url: "https://nocp.space" }],
+  title: "FleetPanel",
+  description:
+    "Self-hosted Minecraft multi-server management panel with Docker orchestration, granular permissions and historical monitoring. Fork of OPanel.",
+  authors: [
+    { name: "kojikk", url: "https://github.com/kojikk" },
+    { name: "Norcleeh", url: "https://github.com/opanel-mc/opanel" }
+  ],
   icons: LogoIcon.src
 };
 

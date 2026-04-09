@@ -3,11 +3,11 @@
 import {
   AtSign,
   BookText,
+  Bot,
   ChevronLeft,
-  Earth,
   FileText,
+  GitFork,
   Github,
-  HandCoins,
   Milestone,
   ThumbsUp
 } from "lucide-react";
@@ -32,6 +32,9 @@ import { minecraftAE } from "@/lib/fonts";
 import { Brand } from "@/components/logo";
 import { $ } from "@/lib/i18n";
 
+const REPO_URL = "https://github.com/kojikk/fleetpanel";
+const UPSTREAM_URL = "https://github.com/opanel-mc/opanel";
+
 const info = [
   {
     name: $("about.info.version"),
@@ -40,18 +43,28 @@ const info = [
   },
   {
     name: $("about.info.author"),
-    value: "Norcleeh",
+    value: <a href="https://github.com/kojikk" target="_blank" rel="noopener noreferrer">kojikk</a>,
     icon: AtSign
   },
   {
     name: $("about.info.source"),
-    value: <a href="https://github.com/opanel-mc/opanel" target="_blank" rel="noopener noreferrer">opanel-mc/opanel</a>,
+    value: <a href={REPO_URL} target="_blank" rel="noopener noreferrer">kojikk/fleetpanel</a>,
     icon: Github
   },
   {
+    name: $("about.info.upstream"),
+    value: <a href={UPSTREAM_URL} target="_blank" rel="noopener noreferrer">opanel-mc/opanel</a>,
+    icon: GitFork
+  },
+  {
     name: $("about.info.license"),
-    value: <a href="https://raw.githubusercontent.com/opanel-mc/opanel/refs/heads/main/LICENSE" target="_blank" rel="noopener noreferrer">MPL-2.0</a>,
+    value: <a href="https://www.mozilla.org/en-US/MPL/2.0/" target="_blank" rel="noopener noreferrer">MPL-2.0</a>,
     icon: FileText
+  },
+  {
+    name: $("about.info.built-with"),
+    value: $("about.info.built-with.value"),
+    icon: Bot
   }
 ];
 
@@ -64,7 +77,10 @@ export default function About() {
       <CardContent className="space-y-2">
         <Brand className="w-fit mx-auto my-10 [&_svg]:w-72"/>
         <p>
-          <span className={cn("text-theme font-semibold", minecraftAE.className)}>OPanel</span> {$("about.description")}
+          <span className={cn("text-theme font-semibold", minecraftAE.className)}>FleetPanel</span> {$("about.description")}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {$("about.fork-notice")}
         </p>
         <Table>
           <TableBody>
@@ -97,36 +113,27 @@ export default function About() {
         <Button
           variant="ghost"
           size="icon"
-          title={$("about.footer.donate")}
-          asChild>
-          <Link href="https://nocp.space/donate" target="_blank" rel="noopener noreferrer">
-            <HandCoins />
-          </Link>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
           title={$("about.footer.github")}
           asChild>
-          <Link href="https://github.com/opanel-mc" target="_blank" rel="noopener noreferrer">
+          <Link href={REPO_URL} target="_blank" rel="noopener noreferrer">
             <Github />
           </Link>
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          title={$("about.footer.website")}
+          title={$("about.footer.upstream")}
           asChild>
-          <Link href="https://opanel.cn" target="_blank" rel="noopener noreferrer">
-            <Earth />
+          <Link href={UPSTREAM_URL} target="_blank" rel="noopener noreferrer">
+            <GitFork />
           </Link>
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          title={$("about.footer.docs")}
+          title={$("about.footer.readme")}
           asChild>
-          <Link href="https://opanel.cn/docs/quick-start.html" target="_blank" rel="noopener noreferrer">
+          <Link href={`${REPO_URL}#readme`} target="_blank" rel="noopener noreferrer">
             <BookText />
           </Link>
         </Button>

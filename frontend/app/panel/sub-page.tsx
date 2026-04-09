@@ -38,7 +38,7 @@ export function SubPage({
   hideNavbar?: boolean
 }>) {
   useEffect(() => {
-    document.title = `OPanel - ${subTitle ?? title}`;
+    document.title = `FleetPanel - ${subTitle ?? title}`;
   }, [title, subTitle]);
 
   return (

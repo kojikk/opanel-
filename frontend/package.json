@@ -1,8 +1,8 @@
 {
-  "name": "opanel",
-  "version": "0.1.0",
+  "name": "fleetpanel",
+  "version": "1.0.0",
   "private": true,
-  "description": "A Minecraft server management panel",
+  "description": "Self-hosted Minecraft multi-server management panel with Docker orchestration, granular permissions and historical monitoring. Fork of OPanel.",
   "packageManager": "pnpm@10.6.2",
   "scripts": {
     "dev": "pnpm prelaunch && next dev --turbopack -p 3001",

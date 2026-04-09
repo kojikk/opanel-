@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookText, Info, LogOut, Settings, Shield, SquareArrowOutUpRight } from "lucide-react";
+import { Github, Info, LogOut, Settings, Shield, SquareArrowOutUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
@@ -34,11 +34,11 @@ export function Navbar({ className, serverId, ...props }: React.ComponentProps<"
         )}
         <Button variant="ghost" asChild>
           <Link
-            href="https://opanel.cn/docs/quick-start.html"
+            href="https://github.com/kojikk/fleetpanel"
             target="_blank"
             rel="noopener noreferrer">
-            <BookText />
-            <span className="max-sm:hidden">{$("nav.docs")}</span>
+            <Github />
+            <span className="max-sm:hidden">{$("nav.source")}</span>
             <SquareArrowOutUpRight className="!size-3 ml-1 max-sm:hidden" stroke="var(--color-muted-foreground)"/>
           </Link>
         </Button>
