@@ -43,7 +43,7 @@ changes.
 | Backups               | —                                                | Manual + scheduled world backups with restore                                 |
 | Scheduled tasks       | —                                                | Cron-style scheduled console commands per server                              |
 | Admin                 | —                                                | Admin panel: user CRUD, role assignment, per-server access grants             |
-| i18n                  | en, zh                                           | en, zh-cn, zh-tw, zh-hk (UI strings rebranded, upstream Chinese docs dropped) |
+| i18n                  | en, zh-hk,zh-tw,zh-cn,jp,fr-fr,gm-de,korea       | en, zh-cn, zh-tw, zh-hk (UI strings rebranded, upstream Chinese docs dropped) |
 
 ## Features
 
