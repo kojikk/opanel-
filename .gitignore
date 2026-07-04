@@ -45,3 +45,6 @@ bin/
 frontend/servers/
 servers/
 .cursor/
+
+# codegraph artifacts
+.codegraph/

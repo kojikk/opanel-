@@ -137,9 +137,5 @@ export function serverApi(serverId: string) {
       get: () => sendGetRequest<{ motd: string }>(`${base}/motd`),
       set: (motd: string) => sendPostRequest(`${base}/motd`, { motd }),
     },
-    wsInfo: () => sendGetRequest<{
-      pluginWsUrl: string;
-      endpoints: { players: string; terminal: string; inventory: string };
-    }>(`${base}/ws`),
   };
 }

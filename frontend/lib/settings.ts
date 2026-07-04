@@ -1,6 +1,4 @@
 import type { LanguageCode } from "@/lang";
-import type { ConsoleLogLevel } from "./ws/terminal";
-import type { ConfigFile } from "@/app/panel/bukkit-config/page";
 import {
   AvatarProvider,
   CapeProvider,
@@ -9,6 +7,10 @@ import {
 } from "./types";
 import { isPreviewVersion } from "./utils";
 import { version } from "./global";
+
+// Inlined from the removed legacy modules (lib/ws/terminal.ts, app/panel/bukkit-config/page.tsx).
+export type ConsoleLogLevel = "INFO" | "WARN" | "ERROR";
+export type ConfigFile = "bukkit" | "spigot" | "paper" | "leaves";
 
 const storageKey = "opanel.settings";
 const settingsVersion = "2";

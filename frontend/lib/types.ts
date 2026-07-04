@@ -1,5 +1,6 @@
 import type { Editor, OnMount } from "@monaco-editor/react";
-import type { ServerGamerules } from "./gamerules";
+// Inlined from the removed lib/gamerules module.
+export type ServerGamerules = Record<string, boolean | number>;
 
 export type ArrayItem<A> = A extends (infer T)[] ? T : never;
 export type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
