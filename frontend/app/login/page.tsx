@@ -74,7 +74,7 @@ export default function Login() {
   useKeydown("Enter", {}, () => handleSubmit());
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col items-center justify-center min-h-screen">
       <div className="flex flex-col items-center gap-8 mb-8">
         <Brand className="[&_svg]:w-72"/>
         <p className="text-lg text-muted-foreground">
