@@ -3,10 +3,19 @@ import { SignJWT, jwtVerify } from "jose";
 import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/client";
+import { assertValidJwtSecret } from "@/lib/auth-policy";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "opanel-default-secret-change-me"
-);
+let jwtSecret: Uint8Array | null = null;
+
+function getJwtSecret(): Uint8Array {
+  if(!jwtSecret) {
+    const value = process.env.JWT_SECRET;
+    assertValidJwtSecret(value);
+    jwtSecret = new TextEncoder().encode(value);
+  }
+  return jwtSecret;
+}
+
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const COOKIE_NAME = "opanel_session";
 
@@ -25,7 +34,7 @@ export async function createSession(userId: string): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime(expiresAt)
     .setIssuedAt()
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 
   await prisma.session.create({
     data: { token, userId, expiresAt },
@@ -56,7 +65,7 @@ export async function validateSession(request?: NextRequest): Promise<{ userId: 
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     const userId = payload.userId as string;
 
     const session = await prisma.session.findUnique({ where: { token } });

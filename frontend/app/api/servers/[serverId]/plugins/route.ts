@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { listServerDirectory, readServerFileBuffer, writeServerFileBuffer, deleteServerFile } from "@/lib/file-manager";
+import { validatePluginUpload } from "@/lib/utils";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
   try {
@@ -76,8 +77,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
+  let fileName: string;
+  try {
+    fileName = validatePluginUpload(file.name, file.size);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeServerFileBuffer(serverId, `plugins/${file.name}`, buffer);
+  await writeServerFileBuffer(serverId, `plugins/${fileName}`, buffer);
   return NextResponse.json({ ok: true });
 }
 

@@ -161,6 +161,42 @@ export function isPreviewVersion(version: string): boolean {
   return version.includes("pre") || version.includes("rc");
 }
 
+export const MAX_PLUGIN_UPLOAD_SIZE = 50 * 1024 * 1024; // 50 MB
+
+/**
+ * Strips any path components from an uploaded file name and rejects
+ * anything that still looks like a traversal attempt. Throws on invalid input.
+ */
+export function sanitizeUploadFilename(name: string): string {
+  if(name.includes("\0")) throw new Error("Invalid file name");
+
+  const parts = name.replaceAll("\\", "/").split("/");
+  const base = parts[parts.length - 1].trim();
+
+  if(base === "" || base === "." || base === "..") throw new Error("Invalid file name");
+  // Defense in depth: reject anything path-like that survived the basename step.
+  if(base.includes("..") || base.includes("/") || base.includes("\\") || base.includes("\0")) {
+    throw new Error("Invalid file name");
+  }
+
+  return base;
+}
+
+/**
+ * Validates an uploaded plugin file and returns the sanitized file name.
+ * Throws with a descriptive message if the name or size is not acceptable.
+ */
+export function validatePluginUpload(name: string, size: number): string {
+  const fileName = sanitizeUploadFilename(name);
+  if(!fileName.toLowerCase().endsWith(".jar")) {
+    throw new Error("Only .jar files are allowed");
+  }
+  if(size > MAX_PLUGIN_UPLOAD_SIZE) {
+    throw new Error("File exceeds the 50 MB size limit");
+  }
+  return fileName;
+}
+
 export function textComponentToString(component: NbtString | NbtObject): string | null {
   if(component instanceof NbtString) {
     return component.value;

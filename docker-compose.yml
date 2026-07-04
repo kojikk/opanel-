@@ -10,7 +10,7 @@ services:
       - ./servers:/servers
     environment:
       DATABASE_URL: postgresql://opanel:opanel@postgres:5432/opanel
-      JWT_SECRET: change-this-to-a-secure-random-string
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET - generate with: openssl rand -base64 48}
       SERVERS_BASE_PATH: /servers
     depends_on:
       postgres:

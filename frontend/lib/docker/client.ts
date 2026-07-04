@@ -67,8 +67,10 @@ export async function createServerContainer(opts: CreateServerOptions): Promise<
     HostConfig: {
       PortBindings: {
         "25565/tcp": [{ HostPort: String(opts.gamePort) }],
-        "25575/tcp": [{ HostPort: String(opts.rconPort) }],
-        [`${opts.pluginPort}/tcp`]: [{ HostPort: String(opts.pluginPort) }],
+        // RCON: loopback only — password travels plaintext; only the panel (localhost) uses it
+        "25575/tcp": [{ HostIp: "127.0.0.1", HostPort: String(opts.rconPort) }],
+        // Plugin API: loopback only — unauthenticated; only the panel (localhost) calls it
+        [`${opts.pluginPort}/tcp`]: [{ HostIp: "127.0.0.1", HostPort: String(opts.pluginPort) }],
       },
       Binds: [`${opts.dataPath}:/data`],
       RestartPolicy: { Name: "unless-stopped" },

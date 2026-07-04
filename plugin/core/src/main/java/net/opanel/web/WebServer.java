@@ -39,13 +39,8 @@ public class WebServer {
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
             config.jsonMapper(new JavalinGson(new Gson()));
-
-            config.plugins.enableCors(cors -> {
-                cors.add(it -> {
-                    it.anyHost();
-                    it.allowCredentials = false;
-                });
-            });
+            // No CORS config: callers are same-origin/server-to-server (the panel on localhost),
+            // so cross-origin browser access is intentionally not allowed.
         });
 
         // WebSocket endpoints (proxied by the panel)
