@@ -10,8 +10,6 @@ import net.opanel.OPanel;
 import net.opanel.controller.BaseController;
 import net.opanel.controller.api.*;
 import net.opanel.endpoint.InventoryEndpoint;
-import net.opanel.endpoint.PlayersEndpoint;
-import net.opanel.endpoint.TerminalEndpoint;
 
 import java.util.HashMap;
 
@@ -44,9 +42,7 @@ public class WebServer {
         });
 
         // WebSocket endpoints (proxied by the panel)
-        app.ws("/socket/players", ws -> new PlayersEndpoint(app, ws, plugin));
         app.ws("/socket/inventory/{uuid}", ws -> new InventoryEndpoint(app, ws, plugin));
-        app.ws("/socket/terminal", ws -> new TerminalEndpoint(app, ws, plugin));
 
         // Headless API controllers
         GamerulesController gamerulesController = new GamerulesController(plugin);
