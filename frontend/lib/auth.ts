@@ -17,7 +17,7 @@ function getJwtSecret(): Uint8Array {
 }
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const COOKIE_NAME = "opanel_session";
+const COOKIE_NAME = "fleetpanel_session";
 
 export async function hashPassword(password: string): Promise<string> {
   return hash(password, 12);

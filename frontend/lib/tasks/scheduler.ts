@@ -56,15 +56,15 @@ export function _setDepsForTests(overrides: Partial<Deps>) {
 // still-running node-cron timers.
 
 const g = globalThis as unknown as {
-  __opanelCronJobs?: Map<string, ScheduledJob>;
-  __opanelSchedulerLoaded?: boolean;
+  __fleetpanelCronJobs?: Map<string, ScheduledJob>;
+  __fleetpanelSchedulerLoaded?: boolean;
 };
 
-const scheduledJobs = (g.__opanelCronJobs ??= new Map<string, ScheduledJob>());
+const scheduledJobs = (g.__fleetpanelCronJobs ??= new Map<string, ScheduledJob>());
 
 export function _resetForTests() {
   cancelAllTasks();
-  g.__opanelSchedulerLoaded = false;
+  g.__fleetpanelSchedulerLoaded = false;
 }
 
 // --- Public API ---
@@ -76,8 +76,8 @@ export function _resetForTests() {
  * unavailable DB must not crash startup.
  */
 export async function initScheduler(): Promise<void> {
-  if (g.__opanelSchedulerLoaded) return;
-  g.__opanelSchedulerLoaded = true;
+  if (g.__fleetpanelSchedulerLoaded) return;
+  g.__fleetpanelSchedulerLoaded = true;
 
   try {
     const tasks = await deps.prisma.task.findMany({
@@ -92,7 +92,7 @@ export async function initScheduler(): Promise<void> {
     console.log(`[scheduler] Initialized: ${tasks.length} enabled task(s) scheduled`);
   } catch (e) {
     // Allow a later retry if the DB was briefly unavailable.
-    g.__opanelSchedulerLoaded = false;
+    g.__fleetpanelSchedulerLoaded = false;
     console.error("[scheduler] Failed to initialize (DB unavailable?):", e);
   }
 }

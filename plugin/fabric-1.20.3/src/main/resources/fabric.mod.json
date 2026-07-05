@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "opanel",
   "version": "${version}",
-  "name": "OPanel",
+  "name": "FleetPanel Companion",
   "description": "A Minecraft server management panel",
   "authors": [
     "NriotHrreion"

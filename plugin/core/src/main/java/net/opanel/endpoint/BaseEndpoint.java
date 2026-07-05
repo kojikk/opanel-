@@ -7,7 +7,7 @@ import io.javalin.http.HttpStatus;
 import io.javalin.websocket.*;
 import net.opanel.OPanel;
 import net.opanel.common.OPanelServer;
-import net.opanel.web.JwtManager;
+import net.opanel.web.TokenVerifier;
 import org.eclipse.jetty.websocket.api.Session;
 
 import java.lang.reflect.Type;
@@ -39,9 +39,10 @@ public abstract class BaseEndpoint implements Connectable {
         ws.onConnect(ctx -> {
             Session session = ctx.session;
 
-            String token = ctx.cookie("token");
-            final String hashedRealKey = plugin.getConfig().accessKey; // hashed 2
-            if(token == null || !JwtManager.verifyToken(token, hashedRealKey, plugin.getConfig().salt)) {
+            // Panel-minted short-lived HMAC token, passed as a query parameter by the
+            // panel's server-side WS proxy (the browser never reaches this port directly).
+            String token = ctx.queryParam("token");
+            if(token == null || !TokenVerifier.verify(token, plugin.getConfig().accessKey)) {
                 ctx.closeSession(1008, "Unauthorized.");
                 return;
             }

@@ -1,8 +1,8 @@
 /**
- * Version of OPanel
+ * Version of FleetPanel
  */
 export const version = "2.0.0-pre4";
 /**
- * Copyright Info of OPanel Project
+ * Copyright Info of FleetPanel
  */
-export const copyrightInfo = "Copyright © OPanel Project 2026";
+export const copyrightInfo = "Copyright © FleetPanel 2026";

@@ -5,7 +5,7 @@ issueTrackerURL="https://github.com/opanel-mc/opanel/issues"
 [[mods]]
 modId="opanel"
 version="${mod_version}"
-displayName="OPanel"
+displayName="FleetPanel Companion"
 displayURL="https://opanel.cn"
 logoFile="icon.png"
 authors="NriotHrreion"

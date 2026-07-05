@@ -5,11 +5,11 @@ vi.mock("@/lib/tasks/scheduler", () => ({ initScheduler }));
 
 import { register } from "@/instrumentation";
 
-const g = globalThis as unknown as { __opanelSchedulerInit?: boolean };
+const g = globalThis as unknown as { __fleetpanelSchedulerInit?: boolean };
 
 describe("instrumentation register()", () => {
   beforeEach(() => {
-    g.__opanelSchedulerInit = false;
+    g.__fleetpanelSchedulerInit = false;
     initScheduler.mockClear();
     vi.unstubAllEnvs();
   });
@@ -31,6 +31,6 @@ describe("instrumentation register()", () => {
     vi.stubEnv("NEXT_RUNTIME", "edge");
     await register();
     expect(initScheduler).not.toHaveBeenCalled();
-    expect(g.__opanelSchedulerInit).toBe(false);
+    expect(g.__fleetpanelSchedulerInit).toBe(false);
   });
 });

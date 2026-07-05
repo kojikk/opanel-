@@ -76,7 +76,7 @@ export default function Thanks() {
         <Text
           id="about.thanks-list.intro"
           args={[
-            <span className={cn("text-theme font-semibold", minecraftAE.className)} key={0}>OPanel</span>
+            <span className={cn("text-theme font-semibold", minecraftAE.className)} key={0}>FleetPanel</span>
           ]}/>
         <Table>
           <TableHeader>

@@ -41,8 +41,8 @@ function createFakeDeps() {
 }
 
 const globalState = globalThis as unknown as {
-  __opanelCronJobs?: Map<string, { stop: () => void }>;
-  __opanelSchedulerLoaded?: boolean;
+  __fleetpanelCronJobs?: Map<string, { stop: () => void }>;
+  __fleetpanelSchedulerLoaded?: boolean;
 };
 
 function makeTask(overrides: Record<string, unknown> = {}) {
@@ -71,7 +71,7 @@ describe("task lifecycle scheduling", () => {
 
     expect(deps.schedule).toHaveBeenCalledTimes(1);
     expect(deps.schedule).toHaveBeenCalledWith("*/5 * * * *", expect.any(Function));
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
   });
 
   it("does not schedule an invalid cron expression", () => {
@@ -81,7 +81,7 @@ describe("task lifecycle scheduling", () => {
     scheduleTask("task-1", "not a cron");
 
     expect(deps.schedule).not.toHaveBeenCalled();
-    expect(globalState.__opanelCronJobs!.size).toBe(0);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(0);
   });
 
   it("cancels the job when the task is disabled (reloadTask)", async () => {
@@ -92,7 +92,7 @@ describe("task lifecycle scheduling", () => {
     await reloadTask("task-1");
 
     expect(deps.jobs[0].stop).toHaveBeenCalledTimes(1);
-    expect(globalState.__opanelCronJobs!.size).toBe(0);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(0);
   });
 
   it("cancels the job on delete (cancelTask)", () => {
@@ -102,7 +102,7 @@ describe("task lifecycle scheduling", () => {
     cancelTask("task-1");
 
     expect(deps.jobs[0].stop).toHaveBeenCalledTimes(1);
-    expect(globalState.__opanelCronJobs!.size).toBe(0);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(0);
   });
 
   it("schedules again on re-enable (reloadTask)", async () => {
@@ -111,14 +111,14 @@ describe("task lifecycle scheduling", () => {
 
     deps.findUnique.mockResolvedValue(makeTask({ enabled: false }));
     await reloadTask("task-1");
-    expect(globalState.__opanelCronJobs!.size).toBe(0);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(0);
 
     deps.findUnique.mockResolvedValue(makeTask({ enabled: true, cron: "0 * * * *" }));
     await reloadTask("task-1");
 
     expect(deps.schedule).toHaveBeenCalledTimes(2);
     expect(deps.schedule).toHaveBeenLastCalledWith("0 * * * *", expect.any(Function));
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
   });
 
   it("rescheduling the same task replaces the old job instead of duplicating", () => {
@@ -127,7 +127,7 @@ describe("task lifecycle scheduling", () => {
     scheduleTask("task-1", "0 * * * *");
 
     expect(deps.jobs[0].stop).toHaveBeenCalledTimes(1);
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
   });
 
   it("reloadTask survives a DB error without throwing and keeps the job", async () => {
@@ -138,7 +138,7 @@ describe("task lifecycle scheduling", () => {
     await expect(reloadTask("task-1")).resolves.toBeUndefined();
 
     expect(deps.jobs[0].stop).not.toHaveBeenCalled();
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
   });
 });
 
@@ -164,7 +164,7 @@ describe("cron callback behavior", () => {
 
     expect(deps.sendCommand).not.toHaveBeenCalled();
     expect(deps.jobs[0].stop).toHaveBeenCalledTimes(1);
-    expect(globalState.__opanelCronJobs!.size).toBe(0);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(0);
   });
 
   it("skips and cancels the job when the server is gone", async () => {
@@ -200,7 +200,7 @@ describe("cron callback behavior", () => {
     expect(deps.sendCommand).toHaveBeenCalledTimes(2);
     expect(console.error).toHaveBeenCalled();
     // Job stays scheduled after a transient RCON failure.
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
   });
 
   it("skips the firing (without cancelling) when the DB check itself fails", async () => {
@@ -212,7 +212,7 @@ describe("cron callback behavior", () => {
 
     expect(deps.sendCommand).not.toHaveBeenCalled();
     expect(deps.jobs[0].stop).not.toHaveBeenCalled();
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
   });
 });
 
@@ -229,7 +229,7 @@ describe("initScheduler", () => {
 
     expect(deps.findMany).toHaveBeenCalledTimes(1);
     expect(deps.schedule).toHaveBeenCalledTimes(2);
-    expect(globalState.__opanelCronJobs!.size).toBe(2);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(2);
   });
 
   it("does not crash startup when the DB is unavailable and allows a retry", async () => {
@@ -237,17 +237,17 @@ describe("initScheduler", () => {
     deps.findMany.mockRejectedValueOnce(new Error("connect ECONNREFUSED"));
 
     await expect(initScheduler()).resolves.toBeUndefined();
-    expect(globalState.__opanelCronJobs!.size).toBe(0);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(0);
 
     deps.findMany.mockResolvedValue([makeTask()]);
     await initScheduler();
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
   });
 
   it("module re-eval with intact globalThis produces no duplicate jobs", async () => {
     const deps = createFakeDeps();
     scheduleTask("task-1", "*/5 * * * *");
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
 
     // Simulate a dev hot reload: the module is re-evaluated from scratch,
     // but globalThis (and thus the jobs map) survives.
@@ -264,7 +264,7 @@ describe("initScheduler", () => {
     // The old job (created by the pre-reload module instance) was stopped,
     // not orphaned, and the map still holds exactly one job.
     expect(deps.jobs[0].stop).toHaveBeenCalledTimes(1);
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
 
     fresh.cancelAllTasks();
   });
@@ -287,10 +287,10 @@ describe("initScheduler", () => {
 
     expect(deps.findMany).toHaveBeenCalledTimes(1);
     expect(deps.schedule).toHaveBeenCalledTimes(1);
-    expect(globalState.__opanelCronJobs!.size).toBe(1);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(1);
 
     fresh.cancelAllTasks();
-    (globalThis as Record<string, unknown>).__opanelSchedulerLoaded = false;
+    (globalThis as Record<string, unknown>).__fleetpanelSchedulerLoaded = false;
   });
 });
 
@@ -304,6 +304,6 @@ describe("cancelAllTasks", () => {
 
     expect(deps.jobs[0].stop).toHaveBeenCalled();
     expect(deps.jobs[1].stop).toHaveBeenCalled();
-    expect(globalState.__opanelCronJobs!.size).toBe(0);
+    expect(globalState.__fleetpanelCronJobs!.size).toBe(0);
   });
 });

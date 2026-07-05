@@ -64,7 +64,7 @@ export default function About() {
       <CardContent className="space-y-2">
         <Brand className="w-fit mx-auto my-10 [&_svg]:w-72"/>
         <p>
-          <span className={cn("text-theme font-semibold", minecraftAE.className)}>OPanel</span> {$("about.description")}
+          <span className={cn("text-theme font-semibold", minecraftAE.className)}>FleetPanel</span> {$("about.description")}
         </p>
         <Table>
           <TableBody>

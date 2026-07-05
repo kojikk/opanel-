@@ -4,10 +4,10 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const g = globalThis as unknown as { __opanelSchedulerInit?: boolean };
+    const g = globalThis as unknown as { __fleetpanelSchedulerInit?: boolean };
     // Guard against double-init (dev hot reload / multiple register calls).
-    if (g.__opanelSchedulerInit) return;
-    g.__opanelSchedulerInit = true;
+    if (g.__fleetpanelSchedulerInit) return;
+    g.__fleetpanelSchedulerInit = true;
 
     const { initScheduler } = await import("@/lib/tasks/scheduler");
     await initScheduler();
