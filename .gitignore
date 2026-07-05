@@ -43,7 +43,7 @@ bin/
 
 ### OPanel ###
 frontend/servers/
-servers/
+/servers/
 .cursor/
 
 # codegraph artifacts

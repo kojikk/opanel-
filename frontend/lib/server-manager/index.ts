@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db/client";
 import { sendCommand } from "@/lib/rcon/client";
+import { derivePluginSecret } from "@/lib/plugin-token";
 import {
   CONTAINER_PREFIX,
   createServerContainer,
@@ -19,19 +20,35 @@ import {
 } from "@/lib/docker/client";
 
 const SERVERS_BASE_PATH = process.env.SERVERS_BASE_PATH || "./servers";
-const OPANEL_PLUGIN_JAR = process.env.OPANEL_PLUGIN_JAR_PATH || "";
+const OPANEL_PLUGIN_JAR = process.env.FLEETPANEL_PLUGIN_JAR_PATH || process.env.OPANEL_PLUGIN_JAR_PATH || "";
 
 function sanitizeName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
 
-async function installPlugin(dataPath: string): Promise<boolean> {
+async function installPlugin(dataPath: string, opts: { rconPassword: string; pluginPort: number }): Promise<boolean> {
   if (!OPANEL_PLUGIN_JAR) return false;
   try {
     const pluginsDir = path.join(dataPath, "plugins");
     fs.mkdirSync(pluginsDir, { recursive: true });
     const dest = path.join(pluginsDir, path.basename(OPANEL_PLUGIN_JAR));
     fs.copyFileSync(OPANEL_PLUGIN_JAR, dest);
+
+    // Provision the plugin config (plugins/OPanel/config.yml) so the plugin:
+    //  - listens on the pluginPort the container exposes (its default is 3000),
+    //  - shares a secret (accessKey) with the panel for WS token verification.
+    // The secret is derived from the RCON password so the raw password never
+    // sits in the plugin's config file.
+    const configDir = path.join(pluginsDir, "OPanel");
+    fs.mkdirSync(configDir, { recursive: true });
+    const configYml = [
+      `accessKey: "${derivePluginSecret(opts.rconPassword)}"`,
+      `salt: ""`,
+      `webServerPort: ${opts.pluginPort}`,
+      `cookieSecure: false`,
+      "",
+    ].join("\n");
+    fs.writeFileSync(path.join(configDir, "config.yml"), configYml, "utf-8");
     return true;
   } catch {
     return false;
@@ -136,7 +153,7 @@ export async function createServer(opts: {
 
     await pullImage();
 
-    const pluginInstalled = await installPlugin(dataPath);
+    const pluginInstalled = await installPlugin(dataPath, { rconPassword, pluginPort });
 
     containerId = await createServerContainer({
       name: opts.name,

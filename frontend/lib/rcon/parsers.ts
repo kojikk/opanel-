@@ -31,6 +31,30 @@ export interface PlayerListResult {
 }
 
 /**
+ * Parse player list with UUIDs from RCON `list uuids` command response.
+ * Format: "There are X of a max of Y players online: name1 (uuid1), name2 (uuid2)"
+ * Returns null when the response does not match the known format.
+ */
+export function parsePlayerListUuids(response: string): (PlayerListResult & { uuids: Record<string, string> }) | null {
+  const match = response.match(/There are (\d+) of a max of (\d+) players online:(.*)/);
+  if (!match) return null;
+  const online = parseInt(match[1]);
+  const max = parseInt(match[2]);
+  const players: string[] = [];
+  const uuids: Record<string, string> = {};
+  for (const entry of match[3].split(",").map((s) => s.trim()).filter(Boolean)) {
+    const m = entry.match(/^(.+?)\s*\(([0-9a-fA-F-]{32,36})\)$/);
+    if (m) {
+      players.push(m[1]);
+      uuids[m[1]] = m[2];
+    } else {
+      players.push(entry);
+    }
+  }
+  return { online, max, players, uuids };
+}
+
+/**
  * Parse player list from RCON `list` command response.
  * Format: "There are X of a max of Y players online: player1, player2, ..."
  * Returns null when the response does not match the known format

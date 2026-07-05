@@ -40,6 +40,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { $ } from "@/lib/i18n";
+import { PlayerSheet } from "./player-sheet";
 
 interface WhitelistEntry {
   uuid: string;
@@ -51,6 +52,7 @@ export default function PlayersPage() {
   const api = serverApi(serverId);
 
   const [players, setPlayers] = useState<string[]>([]);
+  const [uuids, setUuids] = useState<Record<string, string>>({});
   const [online, setOnline] = useState(0);
   const [max, setMax] = useState(0);
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([]);
@@ -62,6 +64,7 @@ export default function PlayersPage() {
     try {
       const res = await api.players.list();
       setPlayers(res.players);
+      setUuids(res.uuids ?? {});
       setOnline(res.online);
       setMax(res.max);
     } catch { /* server may be offline */ }
@@ -224,14 +227,16 @@ export default function PlayersPage() {
                 {filteredPlayers.map((player) => (
                   <TableRow key={player}>
                     <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={`https://api.mineatar.io/face/${player}?scale=2`}
-                          alt={player}
-                          className="w-8 h-8 rounded-sm image-pixelated"
-                        />
-                        <span className="font-medium">{player}</span>
-                      </div>
+                      <PlayerSheet serverId={serverId} name={player} uuid={uuids[player] ?? null} asChild>
+                        <button type="button" className="flex items-center gap-3 cursor-pointer">
+                          <img
+                            src={`https://api.mineatar.io/face/${player}?scale=2`}
+                            alt={player}
+                            className="w-8 h-8 rounded-sm image-pixelated"
+                          />
+                          <span className="font-medium">{player}</span>
+                        </button>
+                      </PlayerSheet>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

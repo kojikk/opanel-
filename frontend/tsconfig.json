@@ -36,7 +36,6 @@
     "build/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "_legacy-inventory"
+    "node_modules"
   ]
 }

@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { parsePlayerList } from "@/lib/rcon/parsers";
+import { parsePlayerList, parsePlayerListUuids } from "@/lib/rcon/parsers";
 import { executeCommand } from "@/lib/server-manager";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
@@ -14,12 +14,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { serverId } = await params;
 
   try {
+    // Prefer `list uuids` so the UI can open per-player views (inventory, skin).
+    const uuidResult = await executeCommand(serverId, "list uuids");
+    const parsedUuids = parsePlayerListUuids(uuidResult);
+    if (parsedUuids) {
+      return NextResponse.json(parsedUuids);
+    }
     const result = await executeCommand(serverId, "list");
     const parsed = parsePlayerList(result);
     if (!parsed) {
       return NextResponse.json({ error: "Unrecognized player list response" }, { status: 502 });
     }
-    return NextResponse.json(parsed);
+    return NextResponse.json({ ...parsed, uuids: {} });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

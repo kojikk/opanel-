@@ -87,7 +87,7 @@ export function serverApi(serverId: string) {
       setFile: (file: string, content: string) => sendPostRequest(`${base}/control`, { file, content }),
     },
     players: {
-      list: () => sendGetRequest<{ online: number; max: number; players: string[] }>(`${base}/players`),
+      list: () => sendGetRequest<{ online: number; max: number; players: string[]; uuids?: Record<string, string> }>(`${base}/players`),
       action: (action: string, player: string, extra?: Record<string, string>) =>
         sendPostRequest(`${base}/players`, { action, player, ...extra }),
     },
