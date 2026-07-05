@@ -14,9 +14,14 @@ describe("parseTps", () => {
     expect(parseTps("TPS: 25.0")).toBe(20);
   });
 
-  it("returns 20 for empty or unparseable response", () => {
-    expect(parseTps("")).toBe(20);
-    expect(parseTps("Unknown command")).toBe(20);
+  it("returns null for empty or unparseable response", () => {
+    expect(parseTps("")).toBeNull();
+    expect(parseTps("Unknown command")).toBeNull();
+  });
+
+  it("returns null for error messages without numbers", () => {
+    expect(parseTps("Unknown or incomplete command, see below for error")).toBeNull();
+    expect(parseTps("An error occurred while running this command")).toBeNull();
   });
 
   it("parses response without color codes", () => {
@@ -37,9 +42,14 @@ describe("parseMspt", () => {
     expect(parseMspt("Average tick time: 12.5 ms")).toBe(12.5);
   });
 
-  it("returns 0 for empty or unparseable response", () => {
-    expect(parseMspt("")).toBe(0);
-    expect(parseMspt("Unknown command")).toBe(0);
+  it("returns null for empty or unparseable response", () => {
+    expect(parseMspt("")).toBeNull();
+    expect(parseMspt("Unknown command")).toBeNull();
+  });
+
+  it("returns null for numeric responses without ms unit", () => {
+    expect(parseMspt("TPS: 20.0")).toBeNull();
+    expect(parseMspt("There are 5 players")).toBeNull();
   });
 
   it("handles integer ms value", () => {
@@ -50,34 +60,37 @@ describe("parseMspt", () => {
 describe("parsePlayerList", () => {
   it("parses standard response with players", () => {
     const result = parsePlayerList("There are 3 of a max of 20 players online: Steve, Alex, Notch");
-    expect(result.online).toBe(3);
-    expect(result.max).toBe(20);
-    expect(result.players).toEqual(["Steve", "Alex", "Notch"]);
+    expect(result).not.toBeNull();
+    expect(result!.online).toBe(3);
+    expect(result!.max).toBe(20);
+    expect(result!.players).toEqual(["Steve", "Alex", "Notch"]);
   });
 
   it("parses zero players", () => {
     const result = parsePlayerList("There are 0 of a max of 20 players online:");
-    expect(result.online).toBe(0);
-    expect(result.max).toBe(20);
-    expect(result.players).toEqual([]);
+    expect(result).not.toBeNull();
+    expect(result!.online).toBe(0);
+    expect(result!.max).toBe(20);
+    expect(result!.players).toEqual([]);
   });
 
   it("handles single player", () => {
     const result = parsePlayerList("There are 1 of a max of 100 players online: Steve");
-    expect(result.online).toBe(1);
-    expect(result.max).toBe(100);
-    expect(result.players).toEqual(["Steve"]);
+    expect(result).not.toBeNull();
+    expect(result!.online).toBe(1);
+    expect(result!.max).toBe(100);
+    expect(result!.players).toEqual(["Steve"]);
   });
 
-  it("handles unknown format gracefully", () => {
-    const result = parsePlayerList("This is not a player list");
-    expect(result.online).toBe(0);
-    expect(result.max).toBe(0);
-    expect(result.players).toEqual([]);
+  it("returns null for unknown format instead of a fake empty server", () => {
+    expect(parsePlayerList("This is not a player list")).toBeNull();
+    expect(parsePlayerList("")).toBeNull();
+    expect(parsePlayerList("Unknown command")).toBeNull();
   });
 
   it("trims player names", () => {
     const result = parsePlayerList("There are 2 of a max of 10 players online:  Steve , Alex ");
-    expect(result.players).toEqual(["Steve", "Alex"]);
+    expect(result).not.toBeNull();
+    expect(result!.players).toEqual(["Steve", "Alex"]);
   });
 });

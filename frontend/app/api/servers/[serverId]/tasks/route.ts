@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db/client";
+import { cancelTask, reloadTask, scheduleTask } from "@/lib/tasks/scheduler";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
   try {
@@ -37,6 +38,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     data: { serverId, name, cron, commands },
   });
 
+  if (task.enabled) {
+    scheduleTask(task.id, task.cron);
+  }
+
   return NextResponse.json(task, { status: 201 });
 }
 
@@ -61,6 +66,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (enabled !== undefined) data.enabled = enabled;
 
   const task = await prisma.task.update({ where: { id }, data });
+
+  // Schedules if enabled, cancels if disabled or gone.
+  await reloadTask(task.id);
+
   return NextResponse.json(task);
 }
 
@@ -77,5 +86,6 @@ export async function DELETE(request: NextRequest) {
   }
 
   await prisma.task.delete({ where: { id } });
+  cancelTask(id);
   return NextResponse.json({ ok: true });
 }

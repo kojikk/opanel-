@@ -1,26 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
+import { fetchGamerules, findUnknownGameruleKeys } from "@/lib/rcon/gamerules-fetch";
 import { executeCommand } from "@/lib/server-manager";
-
-const KNOWN_GAMERULES = [
-  "announceAdvancements", "blockExplosionDropDecay", "commandBlockOutput",
-  "commandModificationBlockLimit", "disableElytraMovementCheck", "disableRaids",
-  "doDaylightCycle", "doEntityDrops", "doFireTick", "doImmediateRespawn",
-  "doInsomnia", "doLimitedCrafting", "doMobLoot", "doMobSpawning",
-  "doPatrolSpawning", "doTileDrops", "doTraderSpawning", "doVinesSpread",
-  "doWardenSpawning", "doWeatherCycle", "drowningDamage", "enderPearlsVanishOnDeath",
-  "fallDamage", "fireDamage", "forgiveDeadPlayers", "freezeDamage",
-  "globalSoundEvents", "keepInventory", "lavaSourceConversion", "logAdminCommands",
-  "maxCommandChainLength", "maxCommandForkCount", "maxEntityCramming",
-  "mobExplosionDropDecay", "mobGriefing", "naturalRegeneration",
-  "playersNetherPortalCreativeDelay", "playersNetherPortalDefaultDelay",
-  "playersSleepingPercentage", "projectilesCanBreakBlocks", "randomTickSpeed",
-  "reducedDebugInfo", "sendCommandFeedback", "showDeathMessages",
-  "snowAccumulationHeight", "spawnChunkRadius", "spawnRadius",
-  "spectatorsGenerateChunks", "tntExplosionDropDecay", "universalAnger",
-  "waterSourceConversion",
-];
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ serverId: string }> }) {
   try {
@@ -31,22 +13,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const { serverId } = await params;
   try {
-    const results: Record<string, string> = {};
-
-    for (const rule of KNOWN_GAMERULES) {
-      try {
-        const response = await executeCommand(serverId, `gamerule ${rule}`);
-        const match = response.match(/(?:is currently set to|has value): (.+)/i)
-          || response.match(/: (.+)$/);
-        if (match) {
-          results[rule] = match[1].trim();
-        }
-      } catch {
-        // Rule may not exist in this MC version
-      }
-    }
-
-    return NextResponse.json(results);
+    const { rules, failed } = await fetchGamerules((command) => executeCommand(serverId, command));
+    return NextResponse.json({ rules, failed });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
@@ -61,6 +29,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { serverId } = await params;
   const body = await request.json();
+
+  const unknownKeys = findUnknownGameruleKeys(Object.keys(body));
+  if (unknownKeys.length > 0) {
+    return NextResponse.json(
+      { error: `Unknown gamerules: ${unknownKeys.join(", ")}`, unknownKeys },
+      { status: 400 }
+    );
+  }
 
   try {
     const results: Record<string, string> = {};

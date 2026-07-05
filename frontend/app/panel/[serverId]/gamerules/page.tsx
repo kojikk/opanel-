@@ -23,8 +23,13 @@ export default function GamerulesPage() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = (await api.gamerules.get()) as Record<string, string>;
-        setRules(res);
+        const res = (await api.gamerules.get()) as { rules: Record<string, string>; failed: string[] };
+        setRules(res.rules ?? {});
+        if (res.failed && res.failed.length > 0) {
+          toast.warning(`Failed to read ${res.failed.length} gamerule(s)`, {
+            description: res.failed.join(", "),
+          });
+        }
       } catch {
         toast.error("Failed to load gamerules");
       } finally {

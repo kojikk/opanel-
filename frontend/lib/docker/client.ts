@@ -20,6 +20,31 @@ export interface CreateServerOptions {
   pluginPort: number;
   dataPath: string;
   javaVersion?: string;
+  /** Optional CPU limit (number of CPUs, e.g. 1.5). Translated to NanoCpus. */
+  cpus?: number;
+}
+
+const GIB = 1024 * 1024 * 1024;
+const MIB = 1024 * 1024;
+
+/**
+ * Derive the container memory limit (bytes) from the itzg MEMORY value (JVM heap).
+ * Accepts the itzg-accepted format: "<n>M" or "<n>G" (e.g. "512M", "2G", "16G").
+ * Container limit = heap + max(1 GiB, 50% of heap) to leave headroom for
+ * JVM off-heap memory (metaspace, threads, native buffers).
+ */
+export function deriveContainerMemoryBytes(memory: string): number {
+  const match = /^(\d+)([MmGg])$/.exec(memory.trim());
+  if (!match) {
+    throw new Error(`Unparseable memory value: "${memory}" (expected e.g. "512M" or "2G")`);
+  }
+  const amount = parseInt(match[1], 10);
+  if (amount <= 0) {
+    throw new Error(`Unparseable memory value: "${memory}" (must be positive)`);
+  }
+  const heapBytes = amount * (match[2].toUpperCase() === "G" ? GIB : MIB);
+  const overheadBytes = Math.max(GIB, Math.floor(heapBytes / 2));
+  return heapBytes + overheadBytes;
 }
 
 export interface ContainerStats {
@@ -55,6 +80,8 @@ export async function createServerContainer(opts: CreateServerOptions): Promise<
     env.push(`JAVA_VERSION=java${opts.javaVersion}`);
   }
 
+  const memoryBytes = deriveContainerMemoryBytes(opts.memory);
+
   const container = await docker.createContainer({
     Image: MC_IMAGE,
     name: containerName,
@@ -65,6 +92,11 @@ export async function createServerContainer(opts: CreateServerOptions): Promise<
       [`${opts.pluginPort}/tcp`]: {},
     },
     HostConfig: {
+      // Hard memory limit: JVM heap + off-heap headroom. MemorySwap equal to
+      // Memory means the container gets no swap.
+      Memory: memoryBytes,
+      MemorySwap: memoryBytes,
+      ...(opts.cpus ? { NanoCpus: Math.round(opts.cpus * 1e9) } : {}),
       PortBindings: {
         "25565/tcp": [{ HostPort: String(opts.gamePort) }],
         // RCON: loopback only — password travels plaintext; only the panel (localhost) uses it
@@ -95,14 +127,24 @@ export async function restartContainer(containerId: string): Promise<void> {
   await container.restart({ t: 30 });
 }
 
+function isNotFound(err: unknown): boolean {
+  return (err as { statusCode?: number })?.statusCode === 404;
+}
+
 export async function removeContainer(containerId: string): Promise<void> {
   const container = docker.getContainer(containerId);
   try {
     await container.stop({ t: 10 });
   } catch {
-    // already stopped
+    // already stopped or already gone (404)
   }
-  await container.remove({ force: true });
+  try {
+    await container.remove({ force: true });
+  } catch (err) {
+    // Container already gone (e.g. manually removed) — treat as success so
+    // deletion can proceed. Anything else is a real failure.
+    if (!isNotFound(err)) throw err;
+  }
 }
 
 export async function getContainerStatus(containerId: string): Promise<string> {
@@ -144,6 +186,26 @@ export function getContainerLogs(containerId: string, tail: number = 100) {
     tail,
     timestamps: true,
   });
+}
+
+export interface PanelContainerInfo {
+  id: string;
+  name: string;
+}
+
+/**
+ * List all containers (running or not) whose name matches the panel's
+ * container-name convention (CONTAINER_PREFIX).
+ */
+export async function listPanelContainers(): Promise<PanelContainerInfo[]> {
+  const containers = await docker.listContainers({ all: true });
+  const result: PanelContainerInfo[] = [];
+  for (const c of containers) {
+    // Docker reports names with a leading slash
+    const name = (c.Names || []).map((n) => n.replace(/^\//, "")).find((n) => n.startsWith(CONTAINER_PREFIX));
+    if (name) result.push({ id: c.Id, name });
+  }
+  return result;
 }
 
 export async function pullImage(): Promise<void> {

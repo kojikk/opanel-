@@ -113,7 +113,7 @@ export function serverApi(serverId: string) {
     },
     monitor: () => sendGetRequest<{
       cpu: number; memory: number; memoryLimit: number; memoryPercent: number;
-      tps: number; mspt: number; isPaused: boolean;
+      tps: number | null; mspt: number | null; isPaused: boolean;
     }>(`${base}/monitor`),
     terminal: {
       send: (command: string) => sendPostRequest<{ result: string }>(`${base}/terminal`, { command }),

@@ -46,7 +46,7 @@ const HISTORY_SIZE = 50;
 interface MonitorSnapshot {
   cpu: number;
   memory: number;
-  tps: number;
+  tps: number | null;
 }
 
 const monitorChartConfig = {
@@ -64,7 +64,7 @@ export default function DashboardPage() {
   const api = serverApi(serverId);
 
   const [monitorHistory, setMonitorHistory] = useState<MonitorSnapshot[]>(
-    Array(HISTORY_SIZE).fill({ cpu: 0, memory: 0, tps: 20 })
+    Array(HISTORY_SIZE).fill({ cpu: 0, memory: 0, tps: null })
   );
   const [players, setPlayers] = useState<{ online: number; max: number; players: string[] } | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -205,10 +205,9 @@ export default function DashboardPage() {
     cpu: d.cpu,
     memory: d.memory,
   }));
-  const tpsChartData = monitorHistory.map((d, i) => ({
-    idx: i,
-    tps: d.tps,
-  }));
+  const tpsChartData = monitorHistory
+    .map((d, i) => ({ idx: i, tps: d.tps }))
+    .filter((d): d is { idx: number; tps: number } => d.tps !== null);
 
   return (
     <SubPage
@@ -409,7 +408,7 @@ export default function DashboardPage() {
       {/* TPS Card */}
       <FunctionalCard
         icon={Server}
-        title={`TPS ${latestMonitor.tps.toFixed(1)}`}
+        title={`TPS ${latestMonitor.tps === null ? "—" : latestMonitor.tps.toFixed(1)}`}
         className="row-start-5 justify-between"
         innerClassName="!overflow-hidden">
         <ChartContainer config={tpsChartConfig} className="w-full max-h-20">
@@ -453,7 +452,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Gauge className="h-4 w-4 text-muted-foreground" />
             <div>
-              <div className="font-medium">{latestMonitor.tps.toFixed(1)}</div>
+              <div className="font-medium">{latestMonitor.tps === null ? "—" : latestMonitor.tps.toFixed(1)}</div>
               <div className="text-xs text-muted-foreground">TPS</div>
             </div>
           </div>

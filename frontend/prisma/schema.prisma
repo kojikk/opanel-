@@ -37,7 +37,9 @@ model Server {
   gamePort        Int
   pluginPort      Int      @default(3000)
   memory          String   @default("2G")
+  cpus            Float?
   javaVersion     String   @default("21")
+  provisionStatus String   @default("ready")
   dataPath        String
   autoStart       Boolean  @default(false)
   pluginInstalled Boolean  @default(false)

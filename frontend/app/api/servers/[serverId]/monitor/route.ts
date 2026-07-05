@@ -19,8 +19,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const dockerStats = await getServerStats(serverId);
 
-  let tps = 20;
-  let mspt = 0;
+  let tps: number | null = null;
+  let mspt: number | null = null;
   let isPaused = false;
 
   if (server.pluginInstalled) {
@@ -30,16 +30,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
       if (pluginRes.ok) {
         const pluginData = await pluginRes.json();
-        tps = pluginData.tps ?? tps;
-        mspt = pluginData.mspt ?? mspt;
-        isPaused = pluginData.isPaused ?? isPaused;
+        tps = pluginData.tps ?? null;
+        mspt = pluginData.mspt ?? null;
+        isPaused = pluginData.isPaused ?? false;
       }
     } catch {
       // plugin unreachable, try RCON
     }
   }
 
-  if (tps === 20 && mspt === 0) {
+  if (tps === null && mspt === null) {
     try {
       const tpsResponse = await executeCommand(serverId, "tps");
       tps = parseTps(tpsResponse);

@@ -15,7 +15,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const result = await executeCommand(serverId, "list");
-    return NextResponse.json(parsePlayerList(result));
+    const parsed = parsePlayerList(result);
+    if (!parsed) {
+      return NextResponse.json({ error: "Unrecognized player list response" }, { status: 502 });
+    }
+    return NextResponse.json(parsed);
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

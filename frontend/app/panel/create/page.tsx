@@ -18,6 +18,7 @@ const MC_VERSIONS = [
   "1.16.5", "1.16.4", "1.16.3", "1.16.2", "1.16.1",
 ];
 const MEMORY_OPTIONS = ["1G", "2G", "4G", "6G", "8G", "12G", "16G"];
+const CPU_OPTIONS = ["0.5", "1", "1.5", "2", "3", "4", "6", "8"];
 
 export default function CreateServerPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function CreateServerPage() {
   const [type, setType] = useState("PAPER");
   const [mcVersion, setMcVersion] = useState("1.21.4");
   const [memory, setMemory] = useState("2G");
+  const [cpus, setCpus] = useState("");
   const [gamePort, setGamePort] = useState(25565);
   const [rconPort, setRconPort] = useState(25575);
 
@@ -43,6 +45,7 @@ export default function CreateServerPage() {
         type,
         mcVersion,
         memory,
+        ...(cpus ? { cpus: parseFloat(cpus) } : {}),
         gamePort,
         rconPort,
       });
@@ -106,17 +109,33 @@ export default function CreateServerPage() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Memory</label>
-          <select
-            value={memory}
-            onChange={(e) => setMemory(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 bg-background"
-          >
-            {MEMORY_OPTIONS.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Memory</label>
+            <select
+              value={memory}
+              onChange={(e) => setMemory(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 bg-background"
+            >
+              {MEMORY_OPTIONS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">CPU Limit</label>
+            <select
+              value={cpus}
+              onChange={(e) => setCpus(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 bg-background"
+            >
+              <option value="">No limit</option>
+              {CPU_OPTIONS.map((c) => (
+                <option key={c} value={c}>{c} CPU{parseFloat(c) === 1 ? "" : "s"}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
